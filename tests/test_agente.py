@@ -78,3 +78,21 @@ def test_contratos_que_se_liberan():
     assert len(filas) == 1
     assert filas[0]["dependencia"] == "Secretaría de Salud"
     assert filas[0]["nivel_inferido"] == "Profesional" and "abogad" in filas[0]["formacion_mencionada"]
+
+
+def test_indice_secop_por_entidad_no_descarga_todo(monkeypatch):
+    from datetime import date
+    from agente_vacantes import cli, secop
+    llamadas = []
+
+    def falso(desde, hasta, nit=None, entidad=None, solo_prestacion_servicios=True, lote=50000):
+        llamadas.append((nit, entidad))
+        return [{"nit_entidad": nit, "entidad": entidad}]
+
+    monkeypatch.setattr(secop, "contratos_por_vencer", falso)
+    ind = cli.IndiceSecop(date(2026, 8, 1), date(2026, 11, 30), False, precargar=False)
+    assert llamadas == []                      # no baja nada al crear el índice
+    assert ind.de("Entidad X", "899999-1") == [{"nit_entidad": "899999", "entidad": None}]
+    assert ind.de("Entidad X", "") == [{"nit_entidad": None, "entidad": "Entidad X"}]
+    assert ind.de("", "") == []
+    assert llamadas == [("899999", None), (None, "Entidad X")]

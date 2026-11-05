@@ -46,15 +46,28 @@ def cmd_entidades(args) -> None:
 class IndiceSecop:
     """Descarga una sola vez los contratos de la ventana y los agrupa por entidad."""
 
-    def __init__(self, desde: date, hasta: date, todos_los_tipos: bool):
-        filas = secop.contratos_por_vencer(desde, hasta, solo_prestacion_servicios=not todos_los_tipos)
+    def __init__(self, desde: date, hasta: date, todos_los_tipos: bool, precargar: bool = True):
+        self.desde, self.hasta, self.todos_los_tipos = desde, hasta, todos_los_tipos
+        self.precargar = precargar
         self.por_nit, self.por_nombre = defaultdict(list), defaultdict(list)
+        if not precargar:
+            # Pocas entidades (--codigo): se consulta SECOP por entidad, sin bajar todo el país.
+            return
+        filas = secop.contratos_por_vencer(desde, hasta, solo_prestacion_servicios=not todos_los_tipos)
         for f in filas:
             self.por_nit[(f.get("nit_entidad") or "").split("-")[0].strip()].append(f)
             self.por_nombre[sigep.norm(f.get("entidad"))].append(f)
         log.info("SECOP II: %d contratos en la ventana", len(filas))
 
     def de(self, nombre: str, nit: str) -> list[dict]:
+        if not self.precargar:
+            nit = (nit or "").split("-")[0].strip()
+            if not nit and not nombre:
+                log.warning("Sin NIT ni nombre de entidad: no se puede consultar SECOP II")
+                return []
+            return secop.contratos_por_vencer(
+                self.desde, self.hasta, nit=nit or None, entidad=None if nit else nombre,
+                solo_prestacion_servicios=not self.todos_los_tipos)
         if nit and nit.split("-")[0].strip() in self.por_nit:
             return self.por_nit[nit.split("-")[0].strip()]
         n = sigep.norm(nombre)
@@ -160,7 +173,8 @@ def cmd_ejecutar(args) -> None:
             usar_ia = False
 
     tipos = {} if args.sin_sigep else sigep.tipos_persona()
-    indice = None if args.sin_secop else IndiceSecop(args.desde, args.hasta, args.todos_los_tipos)
+    indice = None if args.sin_secop else IndiceSecop(args.desde, args.hasta, args.todos_los_tipos,
+                                                          precargar=not args.codigo)
 
     carpeta = args.salida / "entidades"
     resultados = []
