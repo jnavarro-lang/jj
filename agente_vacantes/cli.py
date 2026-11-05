@@ -16,7 +16,7 @@ from pathlib import Path
 
 from rapidfuzz import fuzz
 
-from . import cruce, documentos, reporte, secop, sigep
+from . import config, cruce, documentos, reporte, secop, sigep
 from .modelos import Empleo
 
 log = logging.getLogger("agente_vacantes")
@@ -200,6 +200,9 @@ def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     p = argparse.ArgumentParser(prog="agente_vacantes")
     p.add_argument("--entidades", type=Path, default=Path("entidades.csv"))
+    p.add_argument("--sin-chrome", action="store_true",
+                   help="Consultar el SIGEP sin abrir Google Chrome (cliente HTTP)")
+    p.add_argument("--chrome-oculto", action="store_true", help="Abrir Chrome sin ventana")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("entidades", help="Lista las entidades del SIGEP en entidades.csv")
     e = sub.add_parser("ejecutar", help="Cruza y genera el Excel")
@@ -213,8 +216,22 @@ def main(argv: list[str] | None = None) -> None:
     e.add_argument("--todos-los-tipos", action="store_true",
                    help="SECOP: incluir todos los tipos de contrato, no solo prestación de servicios")
     e.add_argument("--rehacer", action="store_true", help="Ignorar resultados ya guardados")
+    v = sub.add_parser("verificar", help="Abre el SIGEP en Chrome y revisa su estructura real")
+    v.add_argument("--codigo", default="5202")
+    v.add_argument("--desde", type=date.fromisoformat, default=date(2026, 8, 1))
+    v.add_argument("--hasta", type=date.fromisoformat, default=date(2026, 11, 30))
+    v.add_argument("--carpeta", type=Path, default=Path("verificacion"))
     args = p.parse_args(argv)
-    {"entidades": cmd_entidades, "ejecutar": cmd_ejecutar}[args.cmd](args)
+    if args.sin_chrome:
+        config.NAVEGADOR = "http"
+    if args.chrome_oculto:
+        config.NAVEGADOR_VISIBLE = False
+    {"entidades": cmd_entidades, "ejecutar": cmd_ejecutar, "verificar": cmd_verificar}[args.cmd](args)
+
+
+def cmd_verificar(args) -> None:
+    from . import verificacion
+    verificacion.ejecutar(args.codigo, args.desde, args.hasta, args.carpeta)
 
 
 if __name__ == "__main__":

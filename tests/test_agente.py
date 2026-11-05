@@ -96,3 +96,10 @@ def test_indice_secop_por_entidad_no_descarga_todo(monkeypatch):
     assert ind.de("Entidad X", "") == [{"nit_entidad": None, "entidad": "Entidad X"}]
     assert ind.de("", "") == []
     assert llamadas == [("899999", None), (None, "Entidad X")]
+
+
+def test_url_con_params():
+    from agente_vacantes.navegador import url_con_params
+    assert url_con_params("https://x/index", {"entidad": "5202", "f": "01/08/2026"}) == \
+        "https://x/index?entidad=5202&f=01%2F08%2F2026"
+    assert url_con_params("https://x/index?a=1", None) == "https://x/index?a=1"

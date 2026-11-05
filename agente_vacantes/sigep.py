@@ -114,7 +114,7 @@ def total_resultados(html: str | bytes) -> int | None:
 # ------------------------------------------------------------------ consultas en vivo
 
 def formulario() -> bytes:
-    return http.get(config.SIGEP_BASE)
+    return http.get(config.SIGEP_BASE, navegador=True)
 
 
 def listar_entidades() -> list[Opcion]:
@@ -147,7 +147,7 @@ def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hast
     todos: list[dict] = []
     vistos: set[tuple] = set()
     for _ in range(max_paginas):
-        html = http.get(url, params=params)
+        html = http.get(url, params=params, navegador=True)
         filas = parsear_resultados(html, url)
         nuevas = [f for f in filas if tuple(sorted(f.items())) not in vistos]
         if not nuevas:

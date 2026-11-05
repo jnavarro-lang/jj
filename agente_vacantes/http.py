@@ -33,12 +33,24 @@ def _cache_path(url: str, params: dict | None) -> Path:
 
 
 def get(url: str, params: dict | None = None, headers: dict | None = None,
-        usar_cache: bool = True, timeout: int = 60) -> bytes:
-    """GET que devuelve el cuerpo en bytes. Respeta config.PAUSA_SEG entre peticiones."""
+        usar_cache: bool = True, timeout: int = 60, navegador: bool = False) -> bytes:
+    """GET que devuelve el cuerpo en bytes. Respeta config.PAUSA_SEG entre peticiones.
+
+    Con navegador=True la página se abre en Google Chrome (ver navegador.py) y, si Chrome
+    no está disponible, se usa requests.
+    """
     global _ultima
     ruta = _cache_path(url, params)
     if usar_cache and ruta.exists():
         return ruta.read_bytes()
+    if navegador:
+        from . import navegador as nav
+        if nav.disponible():
+            cuerpo = nav.obtener(url, params)
+            if cuerpo is not None:
+                ruta.parent.mkdir(parents=True, exist_ok=True)
+                ruta.write_bytes(cuerpo)
+                return cuerpo
     espera = config.PAUSA_SEG - (time.time() - _ultima)
     if espera > 0:
         time.sleep(espera)

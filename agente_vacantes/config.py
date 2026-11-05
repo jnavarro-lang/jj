@@ -23,3 +23,9 @@ PAUSA_SEG = float(os.getenv("PAUSA_SEG", "1.0"))  # cortesía entre peticiones
 CACHE_DIR = Path(os.getenv("CACHE_DIR", ".cache"))
 INSUMOS_DIR = Path(os.getenv("INSUMOS_DIR", "insumos"))
 USER_AGENT = os.getenv("USER_AGENT", "agente-vacantes/0.1 (consulta de datos publicos)")
+
+# Navegador para el SIGEP: "chrome" (Google Chrome instalado, vía Playwright) o "http".
+NAVEGADOR = os.getenv("NAVEGADOR", "chrome")
+NAVEGADOR_VISIBLE = os.getenv("NAVEGADOR_VISIBLE", "1") == "1"  # ver Chrome mientras trabaja
+NAVEGADOR_RUTA = os.getenv("NAVEGADOR_RUTA", "")  # ruta a chrome.exe si no se detecta solo
+NAVEGADOR_TIMEOUT_MS = int(os.getenv("NAVEGADOR_TIMEOUT_MS", "60000"))

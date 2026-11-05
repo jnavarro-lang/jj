@@ -24,6 +24,26 @@ pip install -r requirements.txt
 Necesita acceso a `www1.funcionpublica.gov.co` y `www.datos.gov.co`, y a los sitios web
 de las entidades si los manuales se descargan por URL.
 
+## Google Chrome
+
+El SIGEP se consulta abriendo **Google Chrome** (Playwright con `channel="chrome"`, usa el
+Chrome instalado; no hace falta `playwright install`). Se ve la ventana mientras trabaja.
+`--chrome-oculto` la oculta y `--sin-chrome` usa el cliente HTTP. Si Chrome no abre, el
+agente avisa y sigue con HTTP. Variables: `NAVEGADOR_RUTA` (ruta a chrome.exe),
+`NAVEGADOR_VISIBLE=0`.
+
+### Verificar la página
+
+```bash
+python -m agente_vacantes verificar --codigo 5202
+```
+
+Abre el SIGEP en Chrome, lista las opciones de *Tipo de persona*, busca la entidad, hace la
+consulta de la ventana por cada tipo y revisa columnas, total y paginación; también revisa
+los nombres de campos de SECOP II. Deja `verificacion/informe.txt` con HTML y capturas.
+
+En Windows: doble clic en `ejecutar_windows.bat` (opción 1 = verificar, 2 = ejecutar).
+
 ## Uso
 
 ```bash
