@@ -9,6 +9,8 @@ import pandas as pd
 HOJAS = {
     "vacantes_planta": "Vacantes planta",
     "contratos": "Contratos que se liberan",
+    "retiros": "Retiros SIGEP",
+    "declaraciones": "Declaraciones SIGEP",
     "dependencias": "Dependencias",
     "alertas": "Alertas",
 }
@@ -36,6 +38,9 @@ def excel(resultados: list[dict], destino: Path) -> Path:
         "vacantes_probables": sum(f["vacantes"] for f in r.get("vacantes_planta", []))
         if r.get("ocupacion_verificada") else "",
         "contratos_que_se_liberan": len(r.get("contratos", [])),
+        "declaraciones_sigep_ventana": len(r.get("declaraciones", [])),
+        "contratistas_sigep_ventana": sum(1 for d in r.get("declaraciones", []) if d.get("es_contratista")),
+        "retiros_sigep_ventana": len(r.get("retiros", [])),
         "error": r.get("error", ""),
     } for r in resultados])
     destino.parent.mkdir(parents=True, exist_ok=True)

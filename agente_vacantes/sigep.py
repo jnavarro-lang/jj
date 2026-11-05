@@ -52,8 +52,40 @@ def opciones_select(html: str | bytes, nombre: str) -> list[Opcion]:
             for o in sel.find_all("option") if o.get("value", "").strip()]
 
 
+# Encabezados reales de la Consulta Ciudadana Ley 2013 de 2019 (verificados en noviembre 2026).
+ENCABEZADOS_EXACTOS = {
+    "declarante": "declarante",
+    "descargar": "descargar",
+    "entidad": "entidad",
+    "cargo/contratista": "cargo",
+    "tipo de publicacion": "tipo_publicacion",
+    "declaracion no.": "numero_declaracion",
+    "declaracion no": "numero_declaracion",
+    "fecha de publicacion": "fecha_publicacion",
+    "estado declaracion": "estado_declaracion",
+}
+TIPOS_DOCUMENTO = ("CEDULA DE CIUDADANIA", "CEDULA DE EXTRANJERIA", "PASAPORTE", "TARJETA DE IDENTIDAD",
+                   "NIT", "PERMISO", "REGISTRO CIVIL", "DOCUMENTO")
+
+
+def separar_declarante(texto: str) -> dict:
+    """'NOMBRE CEDULA DE CIUDADANIA - 123' -> nombre, tipo_documento, numero_documento."""
+    t = re.sub(r"\s+", " ", texto or "").strip()
+    m = re.match(r"^(.*?)\s*-\s*([\w.]+)$", t)
+    cuerpo, numero = (m.group(1), m.group(2)) if m else (t, "")
+    sin_tildes = unicodedata.normalize("NFKD", cuerpo).encode("ascii", "ignore").decode().upper()
+    pos = [sin_tildes.find(" " + d) for d in TIPOS_DOCUMENTO if sin_tildes.find(" " + d) >= 0]
+    if pos:
+        corte = min(pos)
+        return {"nombre": cuerpo[:corte].strip(), "tipo_documento": cuerpo[corte:].strip(),
+                "numero_documento": numero}
+    return {"nombre": cuerpo.strip(), "tipo_documento": "", "numero_documento": numero}
+
+
 def _campo_para(encabezado: str) -> str | None:
     h = norm(encabezado)
+    if h in ENCABEZADOS_EXACTOS:
+        return ENCABEZADOS_EXACTOS[h]
     # Coincidencia más específica primero (fecha fin antes que "fin" genérico, etc.)
     for campo, claves in sorted(COLUMNAS.items(), key=lambda kv: -max(len(c) for c in kv[1])):
         if any(c in h for c in claves):
@@ -84,6 +116,11 @@ def parsear_resultados(html: str | bytes, base_url: str = config.SIGEP_BASE) -> 
                 if a and "detalle_url" not in reg:
                     reg["detalle_url"] = urljoin(base_url, a["href"])
             if any(v for k, v in reg.items() if k != "detalle_url"):
+                if "declarante" in reg:
+                    reg.update(separar_declarante(reg.pop("declarante")))
+                reg.pop("descargar", None)
+                if "cargo" in reg:
+                    reg["es_contratista"] = norm(reg["cargo"]) == "contratista"
                 registros.append(reg)
         utiles = sum(1 for c in campos if not c.startswith("col"))
         if utiles and len(registros) > len(mejor):
@@ -103,12 +140,18 @@ def siguiente_pagina(html: str | bytes, base_url: str = config.SIGEP_BASE) -> st
 
 def total_resultados(html: str | bytes) -> int | None:
     texto = norm(BeautifulSoup(html, "lxml").get_text(" "))
-    m = re.search(r"(\d[\d.,]*)\s+(resultados|registros)", texto) or \
-        re.search(r"(total|de)\s+(\d[\d.,]*)\s*(resultados|registros)?", texto)
-    if not m:
-        return None
-    num = m.group(1) if m.group(1)[0].isdigit() else m.group(2)
-    return int(re.sub(r"[.,]", "", num))
+    m = re.search(r"(\d[\d.,]*)\s+(resultados|registros|declaraciones encontradas)", texto)
+    return int(re.sub(r"[.,]", "", m.group(1))) if m else None
+
+
+def con_tamano_pagina(url: str, tamano: int) -> str:
+    """Cambia max=… en un enlace de paginación para traer más filas por página."""
+    p = urlparse(url)
+    q = {k: v[0] for k, v in parse_qs(p.query, keep_blank_values=True).items()}
+    if "max" in q:
+        q["max"] = str(tamano)
+    from urllib.parse import urlencode
+    return p._replace(query=urlencode(q)).geturl()
 
 
 # ------------------------------------------------------------------ consultas en vivo
@@ -128,15 +171,14 @@ def listar_entidades() -> list[Opcion]:
 
 
 def tipos_persona() -> dict[str, str]:
-    """Devuelve {'contratista': valor, 'servidor': valor} detectado del formulario."""
-    tipos = {"contratista": config.SIGEP_TIPO_CONTRATISTA, "servidor": config.SIGEP_TIPO_SERVIDOR}
+    """{'natural': '25', 'juridica': '26'} leído del formulario (o de SIGEP_TIPOS)."""
+    if config.SIGEP_TIPOS:
+        return {f"tipo{v}": v for v in config.SIGEP_TIPOS.split(",") if v.strip()}
+    tipos = {}
     for o in opciones_select(formulario(), "tipoPersonaId"):
         e = norm(o.etiqueta)
-        if "contrat" in e and not tipos["contratista"]:
-            tipos["contratista"] = o.valor
-        elif ("servidor" in e or "empleado" in e or "funcionario" in e) and not tipos["servidor"]:
-            tipos["servidor"] = o.valor
-    return tipos
+        tipos["juridica" if "jurid" in e else "natural" if "natural" in e else e] = o.valor
+    return tipos or {"natural": "25", "juridica": "26"}
 
 
 def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hasta: str = "",
@@ -149,7 +191,8 @@ def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hast
         if paginas is not None:
             return _filas_de_paginas(paginas, entidad, tipo_persona)
     params = {
-        "tipoPersonaId": tipo_persona, "primerNombre": "", "segundoNombre": "",
+        "tipoPersonaId": tipo_persona, "tipoDeclaracionId": "", "razonSocial": "",
+        "primerNombre": "", "segundoNombre": "",
         "primerApellido": "", "segundoApellido": "", "numeroDocumento": "",
         "entidad": entidad, "fechaFinalizacionDesde": fecha_desde,
         "fechaFinalizacionHasta": fecha_hasta, "find": "Find",
@@ -172,12 +215,25 @@ def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hast
             todos.append(f)
         sig = siguiente_pagina(html, url)
         if sig:  # el enlace ya trae sus propios parámetros
+            sig = con_tamano_pagina(sig, config.SIGEP_PAGE_SIZE)
             parsed = urlparse(sig)
             url = sig.split("?")[0]
             params = {k: v[0] for k, v in parse_qs(parsed.query, keep_blank_values=True).items()}
         else:
-            params["offset"] = int(params.get("offset", 0)) + config.SIGEP_PAGE_SIZE
+            break  # sin enlace "siguiente" no hay más páginas
     return todos
+
+
+def ultimos_servidores_activos(declaraciones: list[dict]) -> list[dict]:
+    """Servidores (no contratistas) cuya última declaración no es de RETIRO."""
+    ultima: dict[str, dict] = {}
+    for d in declaraciones:
+        if d.get("es_contratista"):
+            continue
+        clave = d.get("numero_documento") or norm(d.get("nombre"))
+        if clave not in ultima or (d.get("fecha_publicacion") or "") > (ultima[clave].get("fecha_publicacion") or ""):
+            ultima[clave] = d
+    return [d for d in ultima.values() if "retiro" not in norm(d.get("tipo_publicacion"))]
 
 
 def _filas_de_paginas(paginas: list[bytes], entidad: str, tipo: str) -> list[dict]:

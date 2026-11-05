@@ -319,16 +319,26 @@ def buscar_en_formulario(url: str, tipo: str, entidad: str, nombre: str = "",
     boton = page.locator("button:has-text('Buscar'), input[type=submit][value*='Buscar'], "
                          "[name=find]").first
     boton.click()
-    paginas = []
+    paginas: list[bytes] = []
+    tamano = config.SIGEP_PAGE_SIZE
     for _ in range(max_paginas):
         try:
             page.wait_for_load_state("networkidle", timeout=20000)
         except Exception:
             pass
         time.sleep(config.PAUSA_SEG)
-        paginas.append(page.content().encode("utf8"))
-        sig = _boton_siguiente(page)
+        html = page.content().encode("utf8")
+        if paginas and html == paginas[-1]:
+            break
+        paginas.append(html)
+        from . import sigep
+        sig = sigep.siguiente_pagina(html, page.url)
         if sig is None:
             break
-        sig.click()
+        # La página trae 10 filas; se pide el siguiente tramo con max=SIGEP_PAGE_SIZE.
+        ir(page, sigep.con_tamano_pagina(sig, tamano) if tamano else sig)
+        if tamano and not sigep.parsear_resultados(page.content()):
+            log.warning("La página no aceptó max=%s; se sigue de 10 en 10", tamano)
+            tamano = 0
+            ir(page, sig)
     return paginas

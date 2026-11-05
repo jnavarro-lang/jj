@@ -43,6 +43,26 @@ Nota: en el formulario el campo de fechas se titula *Fecha de publicación*, aun
 parámetro se llama `fechaFinalizacionDesde/Hasta`. Hay que confirmar con `verificar` si
 filtra por fecha de publicación de la declaración o por fecha de finalización.
 
+### Estructura real de la consulta (verificada en noviembre de 2026)
+
+* *Tipo de persona*: `25` = NATURAL, `26` = JURÍDICA. Servidores y contratistas se
+  distinguen por la columna **Cargo/Contratista** (dice `CONTRATISTA` o el cargo).
+* Columnas: Declarante (nombre, tipo y número de documento), Descargar, Entidad,
+  Cargo/Contratista, Tipo de publicación (INGRESO, PERIÓDICO, RETIRO…), Declaración No.,
+  Fecha de publicación, Estado declaración.
+* El filtro `fechaFinalizacionDesde/Hasta` es sobre la fecha de la **declaración**; la
+  página **no** trae la fecha de terminación de los contratos ni su objeto. Esos datos
+  salen de SECOP II.
+* Paginación: enlaces `find=FindNext&offset=…&max=10`. El agente pide `max=100`
+  (`SIGEP_PAGE_SIZE`) y, si la página no lo acepta, sigue de 10 en 10.
+* Entidad 5202 = AGENCIA NACIONAL DE INFRAESTRUCTURA. (14.752 entidades en la lista).
+
+Hojas que salen del SIGEP: **Declaraciones SIGEP** (todas las de la ventana) y **Retiros
+SIGEP** (servidores con declaración de RETIRO en la ventana: cargos que se liberan).
+`--ocupacion` consulta todas las declaraciones de la entidad, sin fechas, para estimar
+los cargos ocupados (la última declaración de cada servidor que no sea de retiro). Es
+lento y es una aproximación.
+
 ### Verificar la página
 
 ```bash

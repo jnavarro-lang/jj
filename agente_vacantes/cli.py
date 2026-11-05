@@ -56,7 +56,7 @@ class IndiceSecop:
         filas = secop.contratos_por_vencer(desde, hasta, solo_prestacion_servicios=not todos_los_tipos)
         for f in filas:
             self.por_nit[(f.get("nit_entidad") or "").split("-")[0].strip()].append(f)
-            self.por_nombre[sigep.norm(f.get("entidad"))].append(f)
+            self.por_nombre[sigep.norm(f.get("entidad")).rstrip(". ")].append(f)
         log.info("SECOP II: %d contratos en la ventana", len(filas))
 
     def de(self, nombre: str, nit: str) -> list[dict]:
@@ -66,11 +66,12 @@ class IndiceSecop:
                 log.warning("Sin NIT ni nombre de entidad: no se puede consultar SECOP II")
                 return []
             return secop.contratos_por_vencer(
-                self.desde, self.hasta, nit=nit or None, entidad=None if nit else nombre,
+                self.desde, self.hasta, nit=nit or None,
+                entidad=None if nit else nombre.strip().rstrip(".").strip(),
                 solo_prestacion_servicios=not self.todos_los_tipos)
         if nit and nit.split("-")[0].strip() in self.por_nit:
             return self.por_nit[nit.split("-")[0].strip()]
-        n = sigep.norm(nombre)
+        n = sigep.norm(nombre).rstrip(". ")
         if n in self.por_nombre:
             return self.por_nombre[n]
         mejor = max(self.por_nombre, key=lambda k: fuzz.token_sort_ratio(n, k), default=None)
@@ -129,13 +130,22 @@ def procesar(ent: dict, args, tipos: dict, indice: IndiceSecop | None, usar_ia: 
                            and not any(g in sigep.norm(e.dependencia) for g in cruce.DEP_GENERICA)})
     r["dependencias"] = deps
 
-    servidores, contratos = [], []
+    # SIGEP (Ley 2013 de 2019): declaraciones publicadas en la ventana, por tipo de persona.
+    declaraciones, servidores, contratos = [], [], []
     if not args.sin_sigep:
-        if tipos.get("servidor"):
-            servidores = sigep.consultar(ent["codigo"], tipos["servidor"], nombre=r["nombre"])
-        contratos = [dict(c, fuente="SIGEP") for c in
-                     sigep.consultar(ent["codigo"], tipos["contratista"], fmt(args.desde), fmt(args.hasta),
-                                     nombre=r["nombre"])]
+        for tipo in tipos.values():
+            declaraciones += sigep.consultar(ent["codigo"], tipo, fmt(args.desde), fmt(args.hasta),
+                                             nombre=r["nombre"])
+        if args.ocupacion:
+            # Ocupación aproximada: última declaración de cada servidor (sin filtro de fechas);
+            # si es de RETIRO, la persona ya no ocupa el cargo.
+            todas = []
+            for tipo in tipos.values():
+                todas += sigep.consultar(ent["codigo"], tipo, nombre=r["nombre"])
+            servidores = sigep.ultimos_servidores_activos(todas)
+    r["declaraciones"] = declaraciones
+    r["retiros"] = [d for d in declaraciones if not d.get("es_contratista")
+                    and "retiro" in sigep.norm(d.get("tipo_publicacion"))]
     if indice:
         contratos += indice.de(r["nombre"], ent.get("nit", ""))
     r["n_servidores"] = len(servidores)
@@ -145,9 +155,9 @@ def procesar(ent: dict, args, tipos: dict, indice: IndiceSecop | None, usar_ia: 
     if not empleos:
         alertas.append({"tipo": "Sin manual de funciones", "detalle":
                         "No se encontró manual/planta: no se pueden calcular vacantes de planta."})
-    if not tipos.get("servidor") and not args.sin_sigep:
-        alertas.append({"tipo": "Sin consulta de servidores", "detalle":
-                        "No se detectó el tipoPersonaId de servidores públicos; defina SIGEP_TIPO_SERVIDOR."})
+    if empleos and not args.ocupacion and not args.sin_sigep:
+        alertas.append({"tipo": "Ocupación no consultada", "detalle":
+                        "Use --ocupacion para estimar los cargos ocupados con las declaraciones del SIGEP."})
     if empleos and not servidores:
         alertas.append({"tipo": "Ocupación no verificada", "detalle":
                         "No hay servidores del SIGEP para esta entidad: las 'vacantes' equivalen al total "
@@ -217,6 +227,8 @@ def main(argv: list[str] | None = None) -> None:
     e.add_argument("--todos-los-tipos", action="store_true",
                    help="SECOP: incluir todos los tipos de contrato, no solo prestación de servicios")
     e.add_argument("--rehacer", action="store_true", help="Ignorar resultados ya guardados")
+    e.add_argument("--ocupacion", action="store_true",
+                   help="Consultar todas las declaraciones de la entidad para estimar cargos ocupados (lento)")
     v = sub.add_parser("verificar", help="Abre el SIGEP en Chrome y revisa su estructura real")
     v.add_argument("--codigo", default="5202")
     v.add_argument("--desde", type=date.fromisoformat, default=date(2026, 8, 1))

@@ -103,3 +103,51 @@ def test_url_con_params():
     assert url_con_params("https://x/index", {"entidad": "5202", "f": "01/08/2026"}) == \
         "https://x/index?entidad=5202&f=01%2F08%2F2026"
     assert url_con_params("https://x/index?a=1", None) == "https://x/index?a=1"
+
+
+# Fragmento RECONSTRUIDO a partir del informe de verificación de la página real
+# (encabezados y textos de celdas copiados del informe; no es el HTML original completo).
+HTML_LEY2013 = """
+<p>Consulta Ciudadana - Declaraciones Ley 2013 de 2019</p>
+<table><tr><th>Declarante</th><th>Descargar</th><th>Entidad</th><th>Cargo/Contratista</th>
+<th>Tipo de publicación</th><th>Declaración No.</th><th>Fecha de publicación</th><th>Estado declaración</th></tr>
+<tr><td>PERSONA UNO CEDULA DE CIUDADANIA -
+                                        1000000001</td><td>Declaración Ley 2013 de 2019</td>
+<td>AGENCIA NACIONAL DE INFRAESTRUCTURA.</td><td>CONTRATISTA</td><td>INGRESO</td>
+<td>4189014-01 Declaración inicial</td><td>2026-11-04 12:28</td><td>FINALIZADO</td></tr>
+<tr><td>PERSONA DOS CEDULA DE CIUDADANIA -
+                                        1000000002</td><td>Declaración Ley 2013 de 2019 Visualizar declaración de Renta</td>
+<td>AGENCIA NACIONAL DE INFRAESTRUCTURA.</td><td>VICEPRESIDENTE DE AGENCIA</td><td>RETIRO</td>
+<td>4157944-01 Declaración inicial</td><td>2026-10-19 18:14</td><td>FINALIZADO</td></tr>
+<tr><td>EMPRESA EJEMPLO SAS NIT-NÚMERO DE IDENTIFICACIÓN TRIBUTARIA -
+                                        900000001</td><td>Declaración</td>
+<td>AGENCIA NACIONAL DE INFRAESTRUCTURA.</td><td>CONTRATISTA</td><td>INGRESO</td>
+<td>4108424-01 Declaración inicial</td><td>2026-09-28 09:13</td><td>FINALIZADO</td></tr>
+</table>
+<a href="/fdci/consultaCiudadana/index?find=FindNext&tipoPersonaId=25&entidad=5202&sort=FECHA_FINALIZACION&max=10&order=asc">Fecha</a>
+<a href="/fdci/consultaCiudadana/index?find=FindNext&tipoPersonaId=25&entidad=5202&offset=10&max=10&sort=FECHA_FINALIZACION&order=desc">Siguiente</a>
+"""
+
+
+def test_resultados_ley2013():
+    filas = sigep.parsear_resultados(HTML_LEY2013)
+    assert len(filas) == 3
+    f = filas[0]
+    assert (f["nombre"], f["tipo_documento"], f["numero_documento"]) == (
+        "PERSONA UNO", "CEDULA DE CIUDADANIA", "1000000001")
+    assert f["entidad"] == "AGENCIA NACIONAL DE INFRAESTRUCTURA." and f["es_contratista"] is True
+    assert f["tipo_publicacion"] == "INGRESO" and f["fecha_publicacion"] == "2026-11-04 12:28"
+    assert f["numero_declaracion"].startswith("4189014") and f["estado_declaracion"] == "FINALIZADO"
+    assert filas[1]["cargo"] == "VICEPRESIDENTE DE AGENCIA" and filas[1]["es_contratista"] is False
+    assert filas[2]["nombre"] == "EMPRESA EJEMPLO SAS" and filas[2]["numero_documento"] == "900000001"
+    assert sigep.total_resultados(HTML_LEY2013) is None  # no confundir "2019" con un total
+    sig = sigep.siguiente_pagina(HTML_LEY2013)
+    assert "offset=10" in sig
+    assert "max=100" in sigep.con_tamano_pagina(sig, 100)
+
+
+def test_ultimos_servidores_activos():
+    filas = sigep.parsear_resultados(HTML_LEY2013)
+    otra = dict(filas[1], tipo_publicacion="PERIÓDICO", fecha_publicacion="2025-03-01 10:00")
+    activos = sigep.ultimos_servidores_activos(filas + [otra])
+    assert activos == []  # su última declaración es de RETIRO; los contratistas no cuentan

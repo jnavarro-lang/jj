@@ -83,7 +83,7 @@ def ejecutar(codigo: str, desde: date, hasta: date, carpeta: Path = Path("verifi
         p(f"  Campos del formulario encontrados: {sel}")
 
     # 2. Consulta por cada tipo de persona
-    lista_tipos = [(o.valor, o.etiqueta) for o in tipos] or [(config.SIGEP_TIPO_CONTRATISTA, "contratista")]
+    lista_tipos = [(o.valor, o.etiqueta) for o in tipos] or [("25", "NATURAL"), ("26", "JURÍDICA")]
     for valor, etiqueta in lista_tipos:
         p(f"\n=== Consulta tipoPersonaId={valor} ({etiqueta}) ===")
         try:
