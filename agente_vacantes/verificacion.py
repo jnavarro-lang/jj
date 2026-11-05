@@ -64,7 +64,10 @@ def ejecutar(codigo: str, desde: date, hasta: date, carpeta: Path = Path("verifi
     p(f"\nOpciones de 'Tipo de persona' (tipoPersonaId): {len(tipos)}")
     for o in tipos:
         p(f"  {o.valor} = {o.etiqueta}")
-    entidades = sigep.opciones_select(form, "entidad")
+    campo = navegador.describir_campo_entidad(config.SIGEP_BASE) if navegador.abierto() else {}
+    if campo:
+        p(f"\nCampo 'Nombre entidad': {json.dumps(campo, ensure_ascii=False)}")
+    entidades = sigep.listar_entidades()
     p(f"\nEntidades en el formulario: {len(entidades)}")
     nombre = next((o.etiqueta for o in entidades if o.valor == codigo), None)
     p(f"Entidad {codigo}: {nombre or '(no aparece en la lista del formulario)'}")
@@ -77,8 +80,22 @@ def ejecutar(codigo: str, desde: date, hasta: date, carpeta: Path = Path("verifi
     for valor, etiqueta in lista_tipos:
         p(f"\n=== Consulta tipoPersonaId={valor} ({etiqueta}) ===")
         try:
-            html = http.get(config.SIGEP_BASE, params=_params(codigo, valor, desde, hasta),
-                            usar_cache=False, navegador=True)
+            paginas = None
+            if navegador.abierto() and config.SIGEP_MODO == "formulario":
+                paginas = navegador.buscar_en_formulario(
+                    config.SIGEP_BASE, valor, codigo, nombre or "",
+                    desde.strftime("%d/%m/%Y"), hasta.strftime("%d/%m/%Y"), max_paginas=3)
+                p(f"Modo formulario (elegir entidad + Buscar): {len(paginas or [])} página(s) leídas")
+            if paginas:
+                html = paginas[0]
+                for i, extra in enumerate(paginas[1:], 2):
+                    (carpeta / f"resultados_tipo{valor}_pag{i}.html").write_bytes(extra)
+                filas_todas = sigep._filas_de_paginas(paginas, codigo, valor)
+                p(f"Filas en las páginas leídas: {len(filas_todas)}")
+            else:
+                html = http.get(config.SIGEP_BASE, params=_params(codigo, valor, desde, hasta),
+                                usar_cache=False, navegador=True)
+                p("Modo URL (consulta con parámetros)")
         except Exception as e:
             p(f"[ERROR] {e}")
             continue

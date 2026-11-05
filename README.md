@@ -32,6 +32,17 @@ Chrome instalado; no hace falta `playwright install`). Se ve la ventana mientras
 agente avisa y sigue con HTTP. Variables: `NAVEGADOR_RUTA` (ruta a chrome.exe),
 `NAVEGADOR_VISIBLE=0`.
 
+Por defecto el SIGEP se usa **como una persona** (`SIGEP_MODO=formulario`): para cada
+entidad abre el formulario, elige *Tipo de persona*, busca y elige la entidad en *Nombre
+entidad* (lista con buscador), llena las fechas, oprime **Buscar** y pasa por todas las
+páginas con *Siguiente*. La lista de entidades (`python -m agente_vacantes entidades`) se
+lee abriendo ese mismo campo y desplazándose hasta el final. `SIGEP_MODO=url` usa en su
+lugar la URL de consulta con parámetros.
+
+Nota: en el formulario el campo de fechas se titula *Fecha de publicación*, aunque el
+parámetro se llama `fechaFinalizacionDesde/Hasta`. Hay que confirmar con `verificar` si
+filtra por fecha de publicación de la declaración o por fecha de finalización.
+
 ### Verificar la página
 
 ```bash

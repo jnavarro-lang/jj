@@ -132,9 +132,10 @@ def procesar(ent: dict, args, tipos: dict, indice: IndiceSecop | None, usar_ia: 
     servidores, contratos = [], []
     if not args.sin_sigep:
         if tipos.get("servidor"):
-            servidores = sigep.consultar(ent["codigo"], tipos["servidor"])
+            servidores = sigep.consultar(ent["codigo"], tipos["servidor"], nombre=r["nombre"])
         contratos = [dict(c, fuente="SIGEP") for c in
-                     sigep.consultar(ent["codigo"], tipos["contratista"], fmt(args.desde), fmt(args.hasta))]
+                     sigep.consultar(ent["codigo"], tipos["contratista"], fmt(args.desde), fmt(args.hasta),
+                                     nombre=r["nombre"])]
     if indice:
         contratos += indice.de(r["nombre"], ent.get("nit", ""))
     r["n_servidores"] = len(servidores)

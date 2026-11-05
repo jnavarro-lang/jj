@@ -118,6 +118,12 @@ def formulario() -> bytes:
 
 
 def listar_entidades() -> list[Opcion]:
+    """Todas las opciones de 'Nombre entidad'. Con Chrome abre la lista como una persona."""
+    from . import navegador
+    if navegador.disponible():
+        opciones = navegador.listar_entidades(config.SIGEP_BASE)
+        if opciones:
+            return [Opcion(v, e) for v, e in opciones]
     return opciones_select(formulario(), "entidad")
 
 
@@ -134,8 +140,14 @@ def tipos_persona() -> dict[str, str]:
 
 
 def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hasta: str = "",
-              max_paginas: int = 500) -> list[dict]:
+              max_paginas: int = 500, nombre: str = "") -> list[dict]:
     """Consulta todas las páginas de resultados. Fechas en formato dd/mm/aaaa."""
+    from . import navegador
+    if navegador.disponible() and config.SIGEP_MODO == "formulario":
+        paginas = navegador.buscar_en_formulario(config.SIGEP_BASE, tipo_persona, entidad, nombre,
+                                                 fecha_desde, fecha_hasta, max_paginas)
+        if paginas is not None:
+            return _filas_de_paginas(paginas, entidad, tipo_persona)
     params = {
         "tipoPersonaId": tipo_persona, "primerNombre": "", "segundoNombre": "",
         "primerApellido": "", "segundoApellido": "", "numeroDocumento": "",
@@ -165,6 +177,20 @@ def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hast
             params = {k: v[0] for k, v in parse_qs(parsed.query, keep_blank_values=True).items()}
         else:
             params["offset"] = int(params.get("offset", 0)) + config.SIGEP_PAGE_SIZE
+    return todos
+
+
+def _filas_de_paginas(paginas: list[bytes], entidad: str, tipo: str) -> list[dict]:
+    todos, vistos = [], set()
+    for html in paginas:
+        for f in parsear_resultados(html):
+            clave = tuple(sorted(f.items()))
+            if clave not in vistos:
+                vistos.add(clave)
+                f["entidad_codigo"] = entidad
+                todos.append(f)
+    if not todos and paginas:
+        _debug(entidad, tipo, paginas[0])
     return todos
 
 
