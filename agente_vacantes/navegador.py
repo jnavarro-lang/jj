@@ -55,6 +55,26 @@ def _abrir():
         return None
 
 
+def ir(page, url: str, intentos: int = 3) -> None:
+    """Navega con paciencia: el sitio puede tardar en responder. Reintenta y espera el formulario."""
+    ultimo = None
+    for i in range(1, intentos + 1):
+        try:
+            page.goto(url, wait_until="commit", timeout=config.NAVEGADOR_TIMEOUT_MS)
+            page.wait_for_selector("form, table, select", timeout=config.NAVEGADOR_TIMEOUT_MS)
+            try:
+                page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                pass
+            return
+        except Exception as e:
+            ultimo = e
+            log.warning("La página no cargó (intento %d de %d): %s", i, intentos,
+                        str(e).splitlines()[0])
+            time.sleep(5 * i)
+    raise ultimo
+
+
 def cerrar() -> None:
     global _pw, _browser, _page
     for obj, metodo in ((_browser, "close"), (_pw, "stop")):
@@ -77,13 +97,20 @@ def obtener(url: str, params: dict | None = None) -> bytes | None:
     page = _abrir()
     if page is None:
         return None
-    page.goto(url_con_params(url, params), wait_until="domcontentloaded")
-    try:
-        page.wait_for_load_state("networkidle", timeout=15000)
-    except Exception:
-        pass  # algunas páginas nunca quedan "quietas"; el DOM ya está
+    ir(page, url_con_params(url, params))
     time.sleep(config.PAUSA_SEG)
     return page.content().encode("utf8")
+
+
+def estado_pagina() -> dict:
+    """URL, título y comienzo del texto que muestra Chrome (para diagnosticar)."""
+    if _page is None:
+        return {}
+    try:
+        return {"url": _page.url, "titulo": _page.title(),
+                "texto": (_page.inner_text("body") or "")[:500]}
+    except Exception as e:
+        return {"error": str(e).splitlines()[0]}
 
 
 def captura(ruta: Path) -> bool:
@@ -107,11 +134,7 @@ _JS_OPCIONES = """() => {
 
 
 def _ir_al_formulario(page, url: str) -> None:
-    page.goto(url, wait_until="domcontentloaded")
-    try:
-        page.wait_for_load_state("networkidle", timeout=15000)
-    except Exception:
-        pass
+    ir(page, url)
 
 
 def describir_campo_entidad(url: str) -> dict:

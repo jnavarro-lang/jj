@@ -52,7 +52,14 @@ def ejecutar(codigo: str, desde: date, hasta: date, carpeta: Path = Path("verifi
     try:
         form = http.get(config.SIGEP_BASE, usar_cache=False, navegador=True)
     except Exception as e:
-        p(f"\n[ERROR] No se pudo abrir la página: {e}")
+        p(f"\n[ERROR] Chrome no pudo abrir la página: {str(e).splitlines()[0]}")
+        try:
+            navegador.captura(carpeta / "error_chrome.png")
+        except Exception:
+            pass
+        p(f"Lo que muestra Chrome: {json.dumps(navegador.estado_pagina(), ensure_ascii=False)}")
+        p("\nDiagnóstico sin Chrome (cliente HTTP):")
+        p(_diagnostico_http())
         return _guardar(carpeta, lineas)
     (carpeta / "formulario.html").write_bytes(form)
     p(f"Modo: {'Google Chrome' if navegador.abierto() else 'cliente HTTP (Chrome no se pudo abrir)'}")
@@ -126,6 +133,18 @@ def ejecutar(codigo: str, desde: date, hasta: date, carpeta: Path = Path("verifi
         p(f"[ERROR] No se pudo consultar SECOP II: {e}")
 
     return _guardar(carpeta, lineas)
+
+
+def _diagnostico_http() -> str:
+    import time
+    import requests
+    ini = time.time()
+    try:
+        r = requests.get(config.SIGEP_BASE, timeout=120, headers={"User-Agent": config.USER_AGENT})
+        return (f"  HTTP {r.status_code} en {time.time() - ini:.1f} s, {len(r.content)} bytes, "
+                f"servidor={r.headers.get('server')}, contiene formulario={'<form' in r.text.lower()}")
+    except Exception as e:
+        return f"  falló en {time.time() - ini:.1f} s: {e}"
 
 
 def _guardar(carpeta: Path, lineas: list[str]) -> Path:
