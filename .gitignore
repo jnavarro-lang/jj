@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.cache/
+salida/
+insumos/*/
+!insumos/.gitkeep
+.env
