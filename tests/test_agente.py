@@ -151,3 +151,29 @@ def test_ultimos_servidores_activos():
     otra = dict(filas[1], tipo_publicacion="PERIÓDICO", fecha_publicacion="2025-03-01 10:00")
     activos = sigep.ultimos_servidores_activos(filas + [otra])
     assert activos == []  # su última declaración es de RETIRO; los contratistas no cuentan
+
+
+def test_consultar_por_nombre_recorre_paginas():
+    cab = ("<tr><th>Declarante</th><th>Descargar</th><th>Entidad</th><th>Cargo/Contratista</th>"
+           "<th>Tipo de publicación</th><th>Declaración No.</th><th>Fecha de publicación</th>"
+           "<th>Estado declaración</th></tr>")
+    fila = ("<tr><td>ANA PRUEBA ROJAS CEDULA DE CIUDADANIA - 1</td><td></td><td>ENTIDAD {e}</td>"
+            "<td>ASESOR</td><td>INGRESO</td><td>{n}-01 Declaración inicial</td>"
+            "<td>2024-01-0{n} 10:00</td><td>FINALIZADO</td></tr>")
+    paginas = [
+        "<table>" + cab + fila.format(e="A", n=1) + "</table>"
+        '<a class="nextLink" href="/fdci/consultaCiudadana/index?offset=10&max=10&primerNombre=ANA">2</a>',
+        "<table>" + cab + fila.format(e="B", n=2) + "</table>",
+    ]
+    llamadas = []
+
+    def obtener(url, params):
+        llamadas.append(params)
+        return paginas[len(llamadas) - 1].encode()
+
+    filas = sigep.consultar_por_nombre("Ána", "Prueba", obtener=obtener)
+    assert llamadas[0]["primerNombre"] == "ANA" and llamadas[0]["entidad"] == ""
+    assert llamadas[0]["tipoPersonaId"] == "25"
+    assert llamadas[1]["offset"] == "10" and llamadas[1]["max"] == "100"
+    assert [f["entidad"] for f in filas] == ["ENTIDAD A", "ENTIDAD B"]
+    assert filas[0]["tipo_publicacion"] == "INGRESO"
