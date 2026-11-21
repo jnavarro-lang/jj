@@ -10,10 +10,9 @@ import re
 
 from rapidfuzz import fuzz
 
+from .documentos import DEP_GENERICA
 from .modelos import Empleo
 from .sigep import norm
-
-DEP_GENERICA = ("donde se ubique", "planta global", "donde se requiera", "todas las dependencias")
 
 
 def _codigo_grado(cargo: str) -> tuple[str | None, str | None]:
@@ -97,10 +96,15 @@ def ubicar_dependencia(texto: str, dependencias: list[str]) -> tuple[str, int]:
     t = norm(texto)
     mejor, pm = "", 0
     for d in dependencias:
+        # Nombres de una sola palabra ("Digital", restos de líneas partidas) dan falsos positivos.
+        if len(norm(d)) <= 6 or len(norm(d).split()) < 2:
+            continue
         p = fuzz.partial_ratio(norm(d), t)  # el nombre de la dependencia como frase dentro del objeto
-        if (p > pm or (p == pm and len(d) > len(mejor))) and len(norm(d)) > 6:
+        if p > pm or (p == pm and len(d) > len(mejor)):
             mejor, pm = d, p
-    return (mejor, int(pm)) if pm >= 85 else ("", int(pm))
+    # 90: "Oficina de Tecnologías de la Información" no debe casar con "Ministerio de
+    # Tecnologías de la Información…" (87).
+    return (mejor, int(pm)) if pm >= 90 else ("", int(pm))
 
 
 def empleo_relacionado(objeto: str, empleos: list[Empleo]) -> Empleo | None:

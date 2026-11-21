@@ -40,6 +40,8 @@ def excel(resultados: list[dict], destino: Path) -> Path:
         "contratos_que_se_liberan": len(r.get("contratos", [])),
         "declaraciones_sigep_ventana": len(r.get("declaraciones", [])),
         "contratistas_sigep_ventana": sum(1 for d in r.get("declaraciones", []) if d.get("es_contratista")),
+        "servidores_sigep_ventana": sum(1 for d in r.get("declaraciones", [])
+                                        if d.get("es_contratista") is False),
         "retiros_sigep_ventana": len(r.get("retiros", [])),
         "error": r.get("error", ""),
     } for r in resultados])

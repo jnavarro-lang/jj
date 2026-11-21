@@ -7,6 +7,7 @@ ajustar el parser.
 """
 from __future__ import annotations
 
+import logging
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -15,6 +16,8 @@ from urllib.parse import parse_qs, urljoin, urlparse
 from bs4 import BeautifulSoup
 
 from . import config, http
+
+log = logging.getLogger(__name__)
 
 # encabezado normalizado -> campo estándar
 COLUMNAS = {
@@ -79,6 +82,10 @@ def separar_declarante(texto: str) -> dict:
         corte = min(pos)
         return {"nombre": cuerpo[:corte].strip(), "tipo_documento": cuerpo[corte:].strip(),
                 "numero_documento": numero}
+    # Formato antiguo (declaraciones de 2020): 'NOMBRE CC', sin número junto al nombre.
+    m = re.match(r"^(.*\S)\s+(CC|CE|NIT|PA|TI|PEP|PPT)$", cuerpo.strip())
+    if m:
+        return {"nombre": m.group(1), "tipo_documento": m.group(2), "numero_documento": numero}
     return {"nombre": cuerpo.strip(), "tipo_documento": "", "numero_documento": numero}
 
 
@@ -120,7 +127,10 @@ def parsear_resultados(html: str | bytes, base_url: str = config.SIGEP_BASE) -> 
                     reg.update(separar_declarante(reg.pop("declarante")))
                 reg.pop("descargar", None)
                 if "cargo" in reg:
-                    reg["es_contratista"] = norm(reg["cargo"]) == "contratista"
+                    # True = contratista, False = servidor con cargo, None = la página no lo dice
+                    # (declaraciones antiguas, tipo OTRO, sin cargo).
+                    c = norm(reg["cargo"])
+                    reg["es_contratista"] = True if c == "contratista" else (False if c else None)
                 registros.append(reg)
         utiles = sum(1 for c in campos if not c.startswith("col"))
         if utiles and len(registros) > len(mejor):
@@ -182,8 +192,21 @@ def tipos_persona() -> dict[str, str]:
 
 
 def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hasta: str = "",
-              max_paginas: int = 500, nombre: str = "") -> list[dict]:
-    """Consulta todas las páginas de resultados. Fechas en formato dd/mm/aaaa."""
+              max_paginas: int = 500, nombre: str = "", juridica: bool = False) -> list[dict]:
+    """Consulta todas las páginas de resultados. Fechas en formato dd/mm/aaaa.
+
+    Con juridica=True todas las filas se marcan como contratistas: una persona jurídica no
+    puede ocupar un empleo de planta.
+    """
+    filas = _consultar(entidad, tipo_persona, fecha_desde, fecha_hasta, max_paginas, nombre)
+    if juridica:
+        for f in filas:
+            f["es_contratista"] = True
+    return filas
+
+
+def _consultar(entidad: str, tipo_persona: str, fecha_desde: str, fecha_hasta: str,
+               max_paginas: int, nombre: str) -> list[dict]:
     from . import navegador
     if navegador.disponible() and config.SIGEP_MODO == "formulario":
         paginas = navegador.buscar_en_formulario(config.SIGEP_BASE, tipo_persona, entidad, nombre,
@@ -221,6 +244,9 @@ def consultar(entidad: str, tipo_persona: str, fecha_desde: str = "", fecha_hast
             params = {k: v[0] for k, v in parse_qs(parsed.query, keep_blank_values=True).items()}
         else:
             break  # sin enlace "siguiente" no hay más páginas
+    else:
+        log.warning("SIGEP %s tipo %s: se alcanzó el límite de %d páginas; puede haber más filas",
+                    entidad, tipo_persona, max_paginas)
     return todos
 
 
@@ -228,7 +254,7 @@ def ultimos_servidores_activos(declaraciones: list[dict]) -> list[dict]:
     """Servidores (no contratistas) cuya última declaración no es de RETIRO."""
     ultima: dict[str, dict] = {}
     for d in declaraciones:
-        if d.get("es_contratista"):
+        if d.get("es_contratista") is not False:  # contratistas y filas sin cargo no cuentan
             continue
         clave = d.get("numero_documento") or norm(d.get("nombre"))
         if clave not in ultima or (d.get("fecha_publicacion") or "") > (ultima[clave].get("fecha_publicacion") or ""):

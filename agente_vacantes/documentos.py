@@ -59,7 +59,8 @@ def texto(ruta: Path) -> str:
 
 # ------------------------------------------------- extractor heurístico (sin IA)
 
-_SECCION = r"(?:\n\s*(?:[IVX]+\.|[0-9]+\.)\s+[A-ZÁÉÍÓÚÑ ]{6,}\n)"
+# Títulos de sección "III. PROPÓSITO PRINCIPAL"; algunos PDF traen "lll." (letras L) en vez de "III.".
+_SECCION = r"(?:(?:\n\s*(?:[IVX]{1,4}|[0-9]+)\.|\s+l{2,3}\.)\s+[A-ZÁÉÍÓÚÑ ]{6,}(?:\n|$))"
 
 
 def _campo(bloque: str, *etiquetas: str) -> str:
@@ -73,6 +74,9 @@ def _campo(bloque: str, *etiquetas: str) -> str:
 def _seccion(bloque: str, titulo: str) -> str:
     m = re.search(titulo + r"[^\n]*\n(.*?)(?=" + _SECCION + r"|\Z)", bloque, flags=re.I | re.S)
     return re.sub(r"\s+", " ", m.group(1)).strip() if m else ""
+
+
+DEP_GENERICA = ("donde se ubique", "planta global", "donde se requiera", "todas las dependencias")
 
 
 def empleos_heuristico(txt: str) -> list[Empleo]:
@@ -90,13 +94,17 @@ def empleos_heuristico(txt: str) -> list[Empleo]:
         estudio = _seccion(bloque, r"formaci[oó]n\s+acad[eé]mica") or _seccion(bloque, r"estudios?")
         exper = _seccion(bloque, r"\bexperiencia\b")
         req = _seccion(bloque, r"requisitos")
+        dependencia = _campo(bloque, r"\bdependencia")
+        if not dependencia or any(g in norm(dependencia) for g in DEP_GENERICA):
+            # Planta global ("Donde se ubique el cargo"): la dependencia real va en ÁREA FUNCIONAL.
+            dependencia = _seccion(bloque, r"\b[aá]rea\s+funcional") or dependencia
         empleos.append(Empleo(
             denominacion=denom.split("  ")[0][:120],
             codigo=(re.search(r"\d{3,4}", _campo(bloque, r"c[oó]digo")) or [None])[0],
             grado=(re.search(r"\d{1,2}", _campo(bloque, r"\bgrado")) or [None])[0],
             nivel=nivel[:40] or None,
             numero_cargos=int(num.group()) if num else None,
-            dependencia=_campo(bloque, r"\bdependencia")[:150] or None,
+            dependencia=dependencia[:150] or None,
             proposito=_seccion(bloque, r"prop[oó]sito\s+principal")[:1500] or None,
             funciones=_seccion(bloque, r"funciones\s+esenciales")[:3000] or None,
             requisitos_estudio=(estudio or req)[:1500] or None,

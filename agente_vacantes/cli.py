@@ -133,18 +133,19 @@ def procesar(ent: dict, args, tipos: dict, indice: IndiceSecop | None, usar_ia: 
     # SIGEP (Ley 2013 de 2019): declaraciones publicadas en la ventana, por tipo de persona.
     declaraciones, servidores, contratos = [], [], []
     if not args.sin_sigep:
-        for tipo in tipos.values():
+        for clave, tipo in tipos.items():
             declaraciones += sigep.consultar(ent["codigo"], tipo, fmt(args.desde), fmt(args.hasta),
-                                             nombre=r["nombre"])
+                                             nombre=r["nombre"], juridica=clave == "juridica")
         if args.ocupacion:
             # Ocupación aproximada: última declaración de cada servidor (sin filtro de fechas);
             # si es de RETIRO, la persona ya no ocupa el cargo.
             todas = []
-            for tipo in tipos.values():
-                todas += sigep.consultar(ent["codigo"], tipo, nombre=r["nombre"])
+            for clave, tipo in tipos.items():
+                todas += sigep.consultar(ent["codigo"], tipo, nombre=r["nombre"],
+                                         juridica=clave == "juridica")
             servidores = sigep.ultimos_servidores_activos(todas)
     r["declaraciones"] = declaraciones
-    r["retiros"] = [d for d in declaraciones if not d.get("es_contratista")
+    r["retiros"] = [d for d in declaraciones if d.get("es_contratista") is False
                     and "retiro" in sigep.norm(d.get("tipo_publicacion"))]
     if indice:
         contratos += indice.de(r["nombre"], ent.get("nit", ""))

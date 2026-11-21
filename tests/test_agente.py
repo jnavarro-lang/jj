@@ -151,3 +151,64 @@ def test_ultimos_servidores_activos():
     otra = dict(filas[1], tipo_publicacion="PERIÓDICO", fecha_publicacion="2025-03-01 10:00")
     activos = sigep.ultimos_servidores_activos(filas + [otra])
     assert activos == []  # su última declaración es de RETIRO; los contratistas no cuentan
+
+
+# Fragmento SINTÉTICO con el formato de las declaraciones antiguas (2020) que devuelve la
+# consulta sin fechas: tipo OTRO, sin cargo y 'NOMBRE CC' en el declarante.
+HTML_ANTIGUO = """
+<table><tr><th>Declarante</th><th>Descargar</th><th>Entidad</th><th>Cargo/Contratista</th>
+<th>Tipo de publicación</th><th>Declaración No.</th><th>Fecha de publicación</th><th>Estado declaración</th></tr>
+<tr><td>PERSONA TRES CC</td><td><a href="/x.pdf">Ver</a></td><td>ENTIDAD X</td><td></td><td>OTRO</td>
+<td></td><td>2020-12-22 16:55</td><td>FINALIZADO</td></tr>
+<tr><td>PERSONA CUATRO CEDULA DE CIUDADANIA - 1000000004</td><td>Ver</td><td>ENTIDAD X</td>
+<td>ASESOR</td><td>RETIRO</td><td>1-01</td><td>2026-09-01 10:00</td><td>FINALIZADO</td></tr>
+</table>
+"""
+
+
+def test_filas_sin_cargo_no_son_servidores(monkeypatch):
+    filas = sigep.parsear_resultados(HTML_ANTIGUO)
+    assert (filas[0]["nombre"], filas[0]["tipo_documento"]) == ("PERSONA TRES", "CC")
+    assert filas[0]["es_contratista"] is None and filas[1]["es_contratista"] is False
+    assert sigep.ultimos_servidores_activos(filas) == []  # sin cargo no cuenta; el otro es RETIRO
+
+    from agente_vacantes import http, navegador
+    monkeypatch.setattr(navegador, "disponible", lambda: False)
+    monkeypatch.setattr(http, "get", lambda *a, **k: HTML_ANTIGUO.encode())
+    juridicas = sigep.consultar("0012", "26", juridica=True)
+    assert len(juridicas) == 2 and all(f["es_contratista"] is True for f in juridicas)
+
+
+# Ficha SINTÉTICA con el formato del manual del MinTIC: la dependencia es genérica y la
+# dependencia real está en "II. ÁREA FUNCIONAL".
+MANUAL_PLANTA_GLOBAL = """
+I. IDENTIFICACIÓN
+Nivel: Profesional
+Denominación del Empleo: Profesional Especializado
+Código: 2028
+Grado: 17
+No. de Cargos: Dos (2)
+Dependencia: Donde se ubique el cargo
+Cargo del jefe Inmediato: Quien ejerza la supervisión directa
+II. ÁREA FUNCIONAL
+Subdirección Financiera
+III. PROPÓSITO PRINCIPAL
+Gestionar los procesos contables de la entidad.
+"""
+
+
+def test_manual_area_funcional():
+    e = documentos.empleos_heuristico(MANUAL_PLANTA_GLOBAL)[0]
+    assert (e.codigo, e.grado, e.numero_cargos) == ("2028", "17", 2)
+    assert e.dependencia == "Subdirección Financiera"
+
+
+def test_area_funcional_con_lll_y_dependencias_cortas():
+    txt = MANUAL_PLANTA_GLOBAL.replace("Subdirección Financiera\nIII. PROPÓSITO PRINCIPAL",
+                                       "Subdirección Financiera lll. PROPÓSITO PRINCIPAL")
+    assert documentos.empleos_heuristico(txt)[0].dependencia == "Subdirección Financiera"
+    deps = ["Digital", "Oficina de Tecnologías de la Información"]
+    objeto = "Prestar servicios para la presencia del Ministerio de Tecnologías de la Información y las Comunicaciones en lo digital"
+    assert cruce.ubicar_dependencia(objeto, deps)[0] == ""
+    assert cruce.ubicar_dependencia("Apoyo a la Oficina de Tecnologias de la Informacion", deps)[0] == \
+        "Oficina de Tecnologías de la Información"
