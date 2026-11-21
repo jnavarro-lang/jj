@@ -50,6 +50,7 @@ tr.dir td:first-child{font-weight:600}
 tr.sub td:first-child{padding-left:38px;position:relative}
 tr.sub td:first-child::before{content:"";position:absolute;left:22px;top:0;bottom:50%;width:10px;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
 td.st{width:1%;white-space:nowrap}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 ol,ul{margin:0;padding-left:20px;display:grid;gap:8px;max-width:72ch}
 .legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
 .legend span{display:inline-flex;gap:6px;align-items:center}
@@ -61,8 +62,8 @@ code{font-family:var(--font-data);font-size:13px}
 <div class="wrap">
 <header>
   <div class="eyebrow">Ministerio de Tecnologías de la Información y las Comunicaciones · Decreto 1064 de 2020</div>
-  <h1>Planta directiva del MinTIC: vacantes, encargos y composición por área</h1>
-  <p class="meta">Fuente: organigrama institucional del 28 de octubre de 2026. Análisis del 21 de noviembre de 2026.</p>
+  <h1>MinTIC: planta, vacantes, encargos y contratos que se liberan</h1>
+  <p class="meta">Fuentes: organigrama del 28/10/2026, Plan de Previsión de Recursos Humanos 2026, SIGEP (Ley 2013) y SECOP II. Consultas del 21 de noviembre de 2026.</p>
 </header>
 
 <section>
@@ -209,17 +210,87 @@ code{font-family:var(--font-data);font-size:13px}
   <p class="src">Seis directivos no aparecen en la consulta con ninguna variante de su nombre: Franklin Merchán Calderón, Luis Leonardo Monguí Rojas, Edda Acero González, Julio César Anaya Estévez, Rosa Tulia Barrero Zambrano y María Camila Burbano Rosero. Eso no prueba que no hayan estado en el sector público. Tres nombres se asociaron por variante de grafía, entidad y cargo: Haylerman Fernando Rivera Sánchez, Víctor Mauricio Beltrán Quintero y Camilo Carrascal. Consulta del 21/11/2026; detalle en <code>trayectoria_directivos.csv</code> y <code>declaraciones_directivos.csv</code> (125 declaraciones).</p>
 </section>
 
-<!--RESULTADOS_AGENTE-->
 
 <section>
-  <h2>Lo que este informe no puede decir todavía</h2>
-  <div class="callout info">
-    <p>El organigrama no trae el tamaño de los equipos. Para saber cuántos servidores y contratistas tiene cada área, y cuántas plazas de planta están libres, hacen falta tres fuentes más:</p>
+  <h2>Planta de personal y vacantes oficiales</h2>
+  <p>Cifras del <strong>Plan de Previsión de Recursos Humanos 2026</strong> del MinTIC, con corte al 31 de diciembre de 2025. Es la fuente oficial más reciente que publica el Ministerio.</p>
+  <div class="kpis">
+    <div class="kpi"><b>659</b><span>empleos en la planta</span></div>
+    <div class="kpi ok"><b>497</b><span>provistos (75,3 %)</span></div>
+    <div class="kpi crit"><b>101</b><span>vacantes definitivas</span></div>
+    <div class="kpi warn"><b>62</b><span>vacantes temporales</span></div>
   </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Nivel</th><th class="num">Carrera</th><th class="num">Libre nombramiento</th><th class="num">Total planta</th><th class="num">Vacantes definitivas</th><th class="num">Vacantes temporales</th></tr></thead>
+    <tbody>
+      <tr><td>Directivo</td><td class="num">–</td><td class="num">32</td><td class="num">32</td><td class="num">8</td><td class="num">0</td></tr>
+      <tr><td>Asesor</td><td class="num">13</td><td class="num">64</td><td class="num">77</td><td class="num">7</td><td class="num">0</td></tr>
+      <tr><td>Profesional</td><td class="num">400</td><td class="num">20</td><td class="num">420</td><td class="num">57</td><td class="num">45</td></tr>
+      <tr><td>Técnico</td><td class="num">55</td><td class="num">–</td><td class="num">55</td><td class="num">18</td><td class="num">7</td></tr>
+      <tr><td>Asistencial</td><td class="num">66</td><td class="num">9</td><td class="num">75</td><td class="num">11</td><td class="num">10</td></tr>
+      <tr><td><strong>Total</strong></td><td class="num"><strong>534</strong></td><td class="num"><strong>125</strong></td><td class="num"><strong>659</strong></td><td class="num"><strong>101</strong></td><td class="num"><strong>62</strong></td></tr>
+    </tbody>
+  </table></div>
   <ul>
-    <li><strong>El decreto o la resolución de planta del MinTIC:</strong> número de cargos por denominación, código y grado.</li>
-    <li><strong>El Manual Específico de Funciones:</strong> propósito, funciones y requisitos de estudio y experiencia de cada empleo.</li>
-    <li><strong>El SIGEP y SECOP II:</strong> servidores y contratistas con declaración de bienes en la ventana de agosto a noviembre de 2026, retiros, y contratos que terminan en esa ventana.</li>
+    <li><strong>El grueso de las vacantes es de nivel profesional:</strong> 102 de 163. Los grupos más grandes son Profesional Especializado 2028 (unas 59 plazas entre los grados 14 y 24) y Profesional Universitario 2044 (unas 27 plazas en los grados 6 a 11).</li>
+    <li>En el nivel directivo hay 8 vacantes definitivas: 2 de Director Técnico, 1 de Jefe de Oficina y 5 de Subdirector Técnico. Coincide con lo que muestra el organigrama: subdirecciones vacías y jefaturas en encargo.</li>
+    <li>De los empleos de libre nombramiento, 16 estaban vacantes al corte: 8 sin proveer y 8 con encargo.</li>
+  </ul>
+  <p class="src">Las cifras son a diciembre de 2025. El plan dice que las vacantes definitivas se ofrecerían en encargo durante 2026 y que hay empleos en el concurso Nación 6, así que algunas pueden estar provistas hoy. El mismo documento anota una diferencia entre los 661 empleos de su registro y los 659 de los decretos. Fuentes: <a href="https://www.mintic.gov.co/portal/715/articles-135689_v2026_plan_prevision_recursos_humanos.pdf">Plan de Previsión 2026</a> y <a href="https://www.mintic.gov.co/portal/715/articles-135689_v2026_plan_vacantes.pdf">Plan Anual de Vacantes 2026</a>.</p>
+</section>
+
+<section>
+  <h2>Movimientos de agosto a noviembre de 2026 en el SIGEP</h2>
+  <p>Declaraciones de bienes y rentas del MinTIC (código SIGEP 0012) publicadas entre el 1 de agosto y el 30 de noviembre de 2026.</p>
+  <div class="kpis">
+    <div class="kpi"><b>135</b><span>declaraciones en la ventana</span></div>
+    <div class="kpi"><b>47</b><span>de servidores: 32 de ingreso, 13 de retiro</span></div>
+    <div class="kpi"><b>88</b><span>de contratistas: 74 de ingreso</span></div>
+    <div class="kpi warn"><b>11</b><span>servidores que se retiraron</span></div>
+  </div>
+  <p>Los movimientos de servidores son casi todos de nivel directivo y asesor, como se espera en un cambio de gobierno. Solo uno es profesional especializado.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Servidor que se retiró</th><th>Cargo según el SIGEP</th><th class="num">Publicación del retiro</th></tr></thead>
+    <tbody><tr><td>Juan Diego Toro Bautista</td><td>Jefe de Oficina</td><td class='num'>02/10/2026</td></tr><tr><td>Camilo Carrascal</td><td>Ministro</td><td class='num'>11/09/2026</td></tr><tr><td>Luis Eduardo Aguiar Delgadillo</td><td>Director</td><td class='num'>07/09/2026</td></tr><tr><td>Germán Enrique Bacca Medina</td><td>Secretario General</td><td class='num'>01/09/2026</td></tr><tr><td>María Carolina Zúñiga Hernández</td><td>Asesor</td><td class='num'>28/08/2026</td></tr><tr><td>Adriana Marcela Duarte Peñalosa</td><td>Asesor</td><td class='num'>26/08/2026</td></tr><tr><td>María Carolina Mercado Flórez</td><td>Asesor</td><td class='num'>25/08/2026</td></tr><tr><td>Magda Yolima Amaya Arévalo</td><td>Secretario General</td><td class='num'>19/08/2026</td></tr><tr><td>Olga Isabel Buelvas Dickson</td><td>Secretario General</td><td class='num'>11/08/2026</td></tr><tr><td>Gloria Patricia Perdomo Rangel</td><td>Viceministro</td><td class='num'>11/08/2026</td></tr><tr><td>Yeimi Carina Murcia Yela</td><td>Ministro</td><td class='num'>04/08/2026</td></tr></tbody>
+  </table></div>
+  <p class="src">La fecha es la de publicación de la declaración, no la del retiro efectivo. El SIGEP no publica la dependencia. Que haya un retiro no significa que el cargo siga vacante: en la misma ventana hay 32 ingresos de servidores. Consulta en la <a href="https://www1.funcionpublica.gov.co/fdci/consultaCiudadana/index">Consulta Ciudadana Ley 2013</a> del 21/11/2026.</p>
+</section>
+
+<section>
+  <h2>Contratos que terminan entre agosto y noviembre</h2>
+  <p>El MinTIC contrata casi todo a través del <strong>Fondo Único de TIC (FUTIC)</strong>. En SECOP II el Ministerio tiene solo 6 contratos de prestación de servicios que terminan en la ventana; el FUTIC tiene 529.</p>
+  <div class="kpis">
+    <div class="kpi"><b>535</b><span>contratos de prestación de servicios que terminan</span></div>
+    <div class="kpi"><b>$101.000 M</b><span>valor de los 529 contratos del FUTIC</span></div>
+    <div class="kpi warn"><b>371</b><span>terminan en octubre</span></div>
+    <div class="kpi"><b>144</b><span>terminan en noviembre</span></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Nivel inferido del objeto (FUTIC)</th><th class="num">Contratos</th></tr></thead>
+    <tbody>
+      <tr><td>Profesional</td><td class="num">429</td></tr>
+      <tr><td>Profesional especializado</td><td class="num">38</td></tr>
+      <tr><td>Técnico o tecnólogo</td><td class="num">29</td></tr>
+      <tr><td>Asistencial o apoyo a la gestión</td><td class="num">28</td></tr>
+      <tr><td>No determinado</td><td class="num">5</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Muestra de contratos</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Entidad</th><th>Contratista</th><th>Objeto (resumen)</th><th class="num">Fin</th><th class="num">Valor</th><th>Dependencia inferida</th><th>Nivel</th></tr></thead>
+    <tbody><tr><td>MinTIC</td><td>Rudy Joel Nieto Henríquez</td><td class='small'>Servicios profesionales en formulación y revisión técnica de proyectos</td><td class='num'>30/09/2026</td><td class='num'>$97.743.000</td><td class='small'>—</td><td class='small'>Profesional</td></tr><tr><td>MinTIC</td><td>Ana María Zapata Bedoya</td><td class='small'>Servicios profesionales para estructuración y formulación de proyectos</td><td class='num'>30/09/2026</td><td class='num'>$133.126.667</td><td class='small'>—</td><td class='small'>Profesional</td></tr><tr><td>MinTIC</td><td>Andrés Fabián Cipamocha Rodríguez</td><td class='small'>Servicios profesionales especializados al GIT de Gestión Pensional</td><td class='num'>19/10/2026</td><td class='num'>$69.523.650</td><td class='small'>Talento Humano</td><td class='small'>Prof. especializado</td></tr><tr><td>MinTIC</td><td>Paola Andrea Cardona Varón</td><td class='small'>Servicios profesionales especializados al GIT de Desarrollo del Talento Humano</td><td class='num'>02/11/2026</td><td class='num'>$69.523.650</td><td class='small'>Talento Humano</td><td class='small'>Prof. especializado</td></tr><tr><td>FUTIC</td><td>Leidy María Arias Tamayo</td><td class='small'>Servicios profesionales a la Oficina para la Gestión de Ingresos del Fondo</td><td class='num'>11/10/2026</td><td class='num'>$89.387.550</td><td class='small'>—</td><td class='small'>Profesional</td></tr><tr><td>FUTIC</td><td>María Paula Seba Buelvas</td><td class='small'>Apoyo jurídico a la supervisión, Dirección de Economía Digital</td><td class='num'>13/10/2026</td><td class='num'>$69.523.650</td><td class='small'>Economía Digital</td><td class='small'>Profesional</td></tr><tr><td>FUTIC</td><td>Camilo Andrés Torres Wilches</td><td class='small'>Servicios jurídicos especializados, política de seguridad digital</td><td class='num'>16/10/2026</td><td class='num'>$99.319.500</td><td class='small'>—</td><td class='small'>Prof. especializado</td></tr><tr><td>FUTIC</td><td>Ivonne Liset Casas Álvarez</td><td class='small'>Servicios jurídicos a la Dirección de Vigilancia, Inspección y Control</td><td class='num'>22/10/2026</td><td class='num'>$69.523.650</td><td class='small'>Investigaciones Administrativas</td><td class='small'>Profesional</td></tr><tr><td>FUTIC</td><td>Sebastián Tovar Toro</td><td class='small'>Servicios profesionales al GIT de Gestión de Servicios Administrativos</td><td class='num'>27/10/2026</td><td class='num'>$59.591.700</td><td class='small'>—</td><td class='small'>Profesional</td></tr><tr><td>FUTIC</td><td>Alisson Michell Prada Tamayo</td><td class='small'>Apoyo a la gestión en atención al ciudadano</td><td class='num'>01/11/2026</td><td class='num'>$19.863.900</td><td class='small'>—</td><td class='small'>Asistencial</td></tr><tr><td>FUTIC</td><td>Camilo Andrés Ortega López</td><td class='small'>Relacionamiento y presencia institucional del Ministerio</td><td class='num'>12/11/2026</td><td class='num'>$69.523.650</td><td class='small'>—</td><td class='small'>Profesional</td></tr></tbody>
+  </table></div>
+  <p class="src">Fuente: SECOP II, Contratos Electrónicos (datos.gov.co), consultado el 21/11/2026. Por fecha de fin, los 529 contratos del FUTIC se reparten así: agosto 2, septiembre 12, octubre 371, noviembre 144. El valor total es $100.951.564.753. La dependencia y el nivel los infiere el agente del texto del objeto y son orientativos; 279 de los 529 contratos quedaron sin dependencia identificable. El listado completo está en el Excel de <code>resultados/mintic/futic/</code>.</p>
+</section>
+
+
+<section>
+  <h2>Lo que falta y cómo leer este informe</h2>
+  <ul>
+    <li><strong>La planta por dependencia</strong> (Resolución 1351 de 2020) y el texto completo del Decreto 2619 de 2012 no se pudieron descargar. Por eso las vacantes oficiales se dan por nivel y empleo, no por área.</li>
+    <li><strong>Las vacantes oficiales son a diciembre de 2025.</strong> Para el estado actual hay que confirmar con el GIT de Administración de Personal del MinTIC o en SIMO.</li>
+    <li><strong>El SIGEP no cubre a toda la planta:</strong> registra unos 309 servidores activos frente a 497 provistos. No sirve para contar plazas ocupadas.</li>
+    <li>El Manual de Funciones vigente (Resolución 03927 de 2024) tiene varias fichas por empleo. Sirve para conocer el perfil de cada cargo, pero no para contar plazas.</li>
   </ul>
 </section>
 
