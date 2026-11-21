@@ -1,0 +1,184 @@
+<title>Planta directiva MinTIC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: informe de una columna; las cuatro ramas del organigrama son secciones con su color institucional. */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --fg:#1b2333; --muted:#5b6578; --line:#dfe3ea;
+  --despacho:#c98a2b; --oficina:#1f2f55; --direccion:#4f8fbf; --sub:#d9e7f2;
+  --ok:#2f7d4f; --ok-bg:#e3f2e8; --warn:#9a6200; --warn-bg:#fbefd6; --crit:#b3261e; --crit-bg:#f9e0de;
+  --font-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11151d; --surface:#181e29; --fg:#e6e9ef; --muted:#9aa4b6; --line:#2a3242;
+  --despacho:#e0a54a; --oficina:#8ea6dd; --direccion:#7fb3dc; --sub:#22364a;
+  --ok:#7fd1a0; --ok-bg:#183326; --warn:#f0c26b; --warn-bg:#3a2e14; --crit:#f2958e; --crit-bg:#3d1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11151d; --surface:#181e29; --fg:#e6e9ef; --muted:#9aa4b6; --line:#2a3242;
+  --despacho:#e0a54a; --oficina:#8ea6dd; --direccion:#7fb3dc; --sub:#22364a;
+  --ok:#7fd1a0; --ok-bg:#183326; --warn:#f0c26b; --warn-bg:#3a2e14; --crit:#f2958e; --crit-bg:#3d1c1a; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+header{display:grid;gap:10px;border-bottom:3px solid var(--despacho);padding-bottom:20px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(26px,4vw,34px);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-size:21px;margin:0;text-wrap:balance}
+h3{font-size:16px;margin:0}
+p{margin:0;max-width:68ch}
+.meta{color:var(--muted);font-size:13.5px}
+section{display:grid;gap:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:2px}
+.kpi b{font-family:var(--font-data);font-size:28px;font-variant-numeric:tabular-nums;font-weight:500}
+.kpi span{font-size:13px;color:var(--muted)}
+.kpi.crit b{color:var(--crit)} .kpi.warn b{color:var(--warn)} .kpi.ok b{color:var(--ok)}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.crit{background:var(--crit-bg);color:var(--crit)}
+.callout{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--crit);border-radius:6px;padding:14px 16px;display:grid;gap:6px}
+.callout.info{border-left-color:var(--direccion)}
+.rama{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.rama-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;padding:14px 18px;border-top:5px solid var(--c,var(--despacho))}
+.rama-head .who{color:var(--muted);font-size:14px}
+.rama-head .stats{font-family:var(--font-data);font-size:12.5px;color:var(--muted)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 18px;border-top:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+tr.dir td:first-child{font-weight:600}
+tr.sub td:first-child{padding-left:38px;position:relative}
+tr.sub td:first-child::before{content:"";position:absolute;left:22px;top:0;bottom:50%;width:10px;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
+td.st{width:1%;white-space:nowrap}
+ol,ul{margin:0;padding-left:20px;display:grid;gap:8px;max-width:72ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.src{font-size:13px;color:var(--muted)}
+code{font-family:var(--font-data);font-size:13px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Ministerio de Tecnologías de la Información y las Comunicaciones · Decreto 1064 de 2020</div>
+  <h1>Planta directiva del MinTIC: vacantes, encargos y composición por área</h1>
+  <p class="meta">Fuente: organigrama institucional del 28 de octubre de 2026. Análisis del 21 de noviembre de 2026.</p>
+</header>
+
+<section>
+  <h2>Resumen</h2>
+  <div class="kpis">
+    <div class="kpi"><b>35</b><span>cargos directivos en el organigrama</span></div>
+    <div class="kpi ok"><b>19</b><span>con titular nombrado</span></div>
+    <div class="kpi warn"><b>14</b><span>en encargo (E), 40 %</span></div>
+    <div class="kpi crit"><b>2</b><span>sin nombre: vacantes</span></div>
+  </div>
+  <p>El organigrama solo muestra a quien dirige cada dependencia. No dice cuántos servidores ni contratistas tiene cada equipo. Un cargo marcado “(E)” está ocupado en encargo, lo que normalmente indica que la plaza no tiene titular; aquí se tratan como posibles vacantes, no como vacantes confirmadas.</p>
+  <div class="legend">
+    <span><span class="pill ok">Titular</span> nombrado en propiedad o de libre nombramiento</span>
+    <span><span class="pill warn">Encargo</span> marcado “(E)” en el organigrama</span>
+    <span><span class="pill crit">Vacante</span> aparece sin nombre (“---”)</span>
+  </div>
+</section>
+
+<section>
+  <h2>Hallazgos principales</h2>
+  <div class="callout">
+    <h3>La Dirección de Economía Digital es el área más descubierta</h3>
+    <p>La dirige Andrés Enrique Galindo Bernal en encargo, y la misma persona es Subdirector de Industria de TI. Las otras dos subdirecciones de esa dirección, Competencias Digitales y Transformación Sectorial, no tienen a nadie. Una sola persona cubre toda la línea de mando.</p>
+  </div>
+  <ol>
+    <li><strong>Pocas vacantes declaradas, mucha provisionalidad.</strong> Solo 2 cargos aparecen vacíos, pero 14 de 35 están en encargo. Esos encargos son las plazas que podrían proveerse con titular.</li>
+    <li><strong>Las áreas de control y legalidad están en encargo:</strong> la Dirección Jurídica, la Oficina de Control Interno, las dos subdirecciones de Vigilancia, Inspección y Control, Talento Humano y Gestión Contractual.</li>
+    <li><strong>El Viceministerio de Conectividad tiene más encargos que titulares:</strong> 6 de sus 10 jefaturas. En Industria de Comunicaciones, la directora y dos de sus tres subdirectores están en encargo.</li>
+    <li><strong>Lo más estable</strong> es la Secretaría General en lo financiero y administrativo, y la Dirección de Gobierno Digital.</li>
+    <li>El organigrama trae dos recuadros marcados en rojo: la Oficina de Fomento Regional de TIC y la Dirección de Industria de Comunicaciones. Ambas están en encargo. El documento no explica la marca.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Composición por área</h2>
+
+  <div class="rama" style="--c:var(--despacho)">
+    <div class="rama-head"><h3>Despacho de la Ministra</h3><span class="who">Alexandra Falla Zerrate</span><span class="stats">7 oficinas · 3 titulares · 4 encargos</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Dependencia</th><th>Jefe</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr class="dir"><td>Oficina Asesora de Planeación y Estudios Sectoriales</td><td>Lorena Andrea Rojas Gutiérrez</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Oficina Asesora de Prensa</td><td>Wilber Alexander Correa Mahecha</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Oficina de Tecnologías de la Información</td><td>Hayllerman Fernando Rivera Sánchez</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Oficina Internacional</td><td>Franklin Merchán Calderón</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="dir"><td>Oficina de Fomento Regional de TIC</td><td>Pedro David Barrios</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="dir"><td>Dirección Jurídica</td><td>Luis Leonardo Monguí Rojas</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="dir"><td>Oficina de Control Interno</td><td>Jairo Andrés Atencia Romero</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="rama" style="--c:var(--direccion)">
+    <div class="rama-head"><h3>Viceministerio de Conectividad</h3><span class="who">Camilo Carrascal Vergel · titular</span><span class="stats">3 direcciones · 7 subdirecciones · 6 encargos</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Dependencia</th><th>Jefe</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr class="dir"><td>Dirección de Infraestructura</td><td>Margarita Hernández Cortés</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="sub"><td>Subdirección de Estructuración de Proyectos</td><td>Shirley Andrea Zamora Mora</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="sub"><td>Subdirección de Operaciones</td><td>Daisy Carolina Cabana</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Dirección de Industria de Comunicaciones</td><td>Edda Acero González</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="sub"><td>Subdirección para la Industria de Comunicaciones</td><td>Isandir Vega Fiesco</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="sub"><td>Subdirección de Radiodifusión Sonora</td><td>Mauricio Beltrán Quintero</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="sub"><td>Subdirección de Asuntos Postales</td><td>Julio César Anaya Estévez</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="dir"><td>Dirección de Vigilancia, Inspección y Control</td><td>Adolfo León Varela Sánchez</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="sub"><td>Subdirección de Vigilancia e Inspección</td><td>Daniel Guauque Cárdenas</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="sub"><td>Subdirección de Investigaciones Administrativas</td><td>Rosa Tulia Barrero Zambrano</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="rama" style="--c:var(--direccion)">
+    <div class="rama-head"><h3>Viceministerio de Transformación Digital</h3><span class="who">Germán Bacca Medina · titular</span><span class="stats">3 direcciones · 5 subdirecciones · 2 encargos · 2 vacantes</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Dependencia</th><th>Jefe</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr class="dir"><td>Dirección de Apropiación de TIC</td><td>Danny Alexis Ramírez Jaramillo</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Dirección de Gobierno Digital</td><td>Jaime Emiro Criales Henao</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="sub"><td>Subdirección de Estándares y Arquitectura de Tecnologías de la Información</td><td>Lucy Estella Palacios Valoyes</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="sub"><td>Subdirección de Fortalecimiento de Capacidades Públicas Digitales</td><td>Luisa Fernanda Medina Martínez</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="dir"><td>Dirección de Economía Digital</td><td>Andrés Enrique Galindo Bernal</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="sub"><td>Subdirección para las Competencias Digitales</td><td>Sin nombre</td><td class="st"><span class="pill crit">Vacante</span></td></tr>
+        <tr class="sub"><td>Subdirección de Industria de TI</td><td>Andrés Enrique Galindo Bernal</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="sub"><td>Subdirección para la Transformación Sectorial</td><td>Sin nombre</td><td class="st"><span class="pill crit">Vacante</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="rama" style="--c:var(--oficina)">
+    <div class="rama-head"><h3>Secretaría General</h3><span class="who">Liza Nathalia Rodríguez Galvis</span><span class="stats">6 dependencias · 2 encargos</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Dependencia</th><th>Jefe</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr class="dir"><td>Subdirección Financiera</td><td>Flor Ángela Castro Rodríguez</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Subdirección Administrativa</td><td>Lina Marcela Cárdenas Martínez</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Oficina para la Gestión de Ingresos del Fondo</td><td>Gina del Rosario Núñez Polo</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>GIT de Control Interno Disciplinario</td><td>Paola Andrea Pedraza Olaya</td><td class="st"><span class="pill ok">Titular</span></td></tr>
+        <tr class="dir"><td>Subdirección para la Gestión del Talento Humano</td><td>María Camila Burbano Rosero</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+        <tr class="dir"><td>Subdirección de Gestión Contractual</td><td>Alba Rubiela Rodríguez Garzón</td><td class="st"><span class="pill warn">Encargo</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!--RESULTADOS_AGENTE-->
+
+<section>
+  <h2>Lo que este informe no puede decir todavía</h2>
+  <div class="callout info">
+    <p>El organigrama no trae el tamaño de los equipos. Para saber cuántos servidores y contratistas tiene cada área, y cuántas plazas de planta están libres, hacen falta tres fuentes más:</p>
+  </div>
+  <ul>
+    <li><strong>El decreto o la resolución de planta del MinTIC:</strong> número de cargos por denominación, código y grado.</li>
+    <li><strong>El Manual Específico de Funciones:</strong> propósito, funciones y requisitos de estudio y experiencia de cada empleo.</li>
+    <li><strong>El SIGEP y SECOP II:</strong> servidores y contratistas con declaración de bienes en la ventana de agosto a noviembre de 2026, retiros, y contratos que terminan en esa ventana.</li>
+  </ul>
+</section>
+
+<p class="src">Conteo: 35 cargos = Ministra, 7 dependencias del Despacho, 2 viceministros, Secretaria General, 6 direcciones, 12 subdirecciones de los viceministerios y 6 dependencias de la Secretaría General. Los nombres se transcribieron del organigrama publicado; un cargo “(E)” no garantiza que la plaza esté vacante.</p>
+</div>
