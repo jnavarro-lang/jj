@@ -5,3 +5,5 @@ salida/
 insumos/*/
 !insumos/.gitkeep
 .env
+salida_*/
+verificacion/
