@@ -250,6 +250,55 @@ def _consultar(entidad: str, tipo_persona: str, fecha_desde: str, fecha_hasta: s
     return todos
 
 
+def _mayus_sin_tildes(t: str) -> str:
+    t = unicodedata.normalize("NFKD", t or "").encode("ascii", "ignore").decode()
+    return re.sub(r"\s+", " ", t).strip().upper()
+
+
+def parametros_por_nombre(primer_nombre: str, primer_apellido: str, segundo_apellido: str = "",
+                          tipo_persona: str = "25", segundo_nombre: str = "") -> dict:
+    """Parámetros de la Consulta Ciudadana para buscar por nombre, sin entidad ni fechas."""
+    return {
+        "tipoPersonaId": tipo_persona,
+        "primerNombre": _mayus_sin_tildes(primer_nombre),
+        "segundoNombre": _mayus_sin_tildes(segundo_nombre),
+        "primerApellido": _mayus_sin_tildes(primer_apellido),
+        "segundoApellido": _mayus_sin_tildes(segundo_apellido),
+        "numeroDocumento": "", "entidad": "", "fechaFinalizacionDesde": "",
+        "fechaFinalizacionHasta": "", "find": "Find",
+        "max": config.SIGEP_PAGE_SIZE, "offset": 0,
+    }
+
+
+def consultar_por_nombre(primer_nombre: str, primer_apellido: str, segundo_apellido: str = "",
+                         tipo_persona: str = "25", segundo_nombre: str = "",
+                         max_paginas: int = 50, obtener=None) -> list[dict]:
+    """Todas las declaraciones publicadas de las personas que coinciden con el nombre.
+
+    Consulta por HTTP (sin entidad ni fechas) y recorre todas las páginas. `obtener` es
+    una función (url, params) -> bytes; por defecto http.get, que respeta la pausa de
+    cortesía entre peticiones. Devuelve las filas de parsear_resultados, sin duplicados.
+    """
+    obtener = obtener or (lambda u, p: http.get(u, params=p))
+    url, params = config.SIGEP_BASE, parametros_por_nombre(
+        primer_nombre, primer_apellido, segundo_apellido, tipo_persona, segundo_nombre)
+    todos: list[dict] = []
+    vistos: set[tuple] = set()
+    for _ in range(max_paginas):
+        html = obtener(url, params)
+        nuevas = [f for f in parsear_resultados(html, url) if tuple(sorted(f.items())) not in vistos]
+        for f in nuevas:
+            vistos.add(tuple(sorted(f.items())))
+            todos.append(f)
+        sig = siguiente_pagina(html, url)
+        if not nuevas or not sig:
+            break
+        parsed = urlparse(con_tamano_pagina(sig, config.SIGEP_PAGE_SIZE))
+        url = sig.split("?")[0]
+        params = {k: v[0] for k, v in parse_qs(parsed.query, keep_blank_values=True).items()}
+    return todos
+
+
 def ultimos_servidores_activos(declaraciones: list[dict]) -> list[dict]:
     """Servidores (no contratistas) cuya última declaración no es de RETIRO."""
     ultima: dict[str, dict] = {}

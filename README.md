@@ -63,6 +63,12 @@ SIGEP** (servidores con declaración de RETIRO en la ventana: cargos que se libe
 los cargos ocupados (la última declaración de cada servidor que no sea de retiro). Es
 lento y es una aproximación.
 
+### Consultar por nombre
+
+`sigep.consultar_por_nombre("Nombre", "Apellido", segundo_apellido="")` busca en la consulta
+ciudadana por nombre (tipo NATURAL, sin entidad ni fechas), recorre todas las páginas y devuelve
+las filas de `parsear_resultados`. Se usó para `resultados/mintic/trayectoria_directivos.*`.
+
 ### Verificar la página
 
 ```bash
