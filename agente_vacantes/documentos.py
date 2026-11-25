@@ -50,7 +50,8 @@ def localizar_todos(codigo: str, tipo: str, referencia: str | None = None) -> li
     carpeta = config.INSUMOS_DIR / codigo
     if not carpeta.is_dir():
         return []
-    return sorted(f for f in carpeta.iterdir() if f.is_file() and tipo in norm(f.name))
+    return sorted(f for f in carpeta.iterdir()
+                  if f.is_file() and tipo in norm(f.name) and not f.name.endswith(".ocr.txt"))
 
 
 def texto(ruta: Path) -> str:
@@ -89,11 +90,19 @@ def _seccion(bloque: str, titulo: str) -> str:
     return re.sub(r"\s+", " ", m.group(1)).strip() if m else ""
 
 
-def _codigo(valor: str) -> str | None:
-    # OCR suele leer "E1"/"G1" como "El"/"Gl" y "O1" como "01"
-    valor = re.sub(r"^([A-Z])[lI|]\b", r"\g<1>1", valor.strip())
-    m = re.search(r"\b[A-Z]{0,3}\d{1,4}\b", valor)
-    return m.group(0) if m else None
+def _codigo(valor: str, denominacion: str = "") -> str | None:
+    """Código del empleo, corrigiendo confusiones típicas del OCR en códigos con letra
+    (E1/G1 -> "El"/"Gl", G3 -> "63", O1 -> "01", T1 -> "Ti"/"Tí"/"T")."""
+    v = valor.strip()
+    v = re.sub(r"^([A-Z])[lIií|]\b", r"\g<1>1", v)
+    v = re.sub(r"^6([1-9])\b", r"G\1", v)
+    m = re.search(r"\b[A-Z]{0,3}\d{1,4}\b", v)
+    cod = m.group(0) if m else None
+    if cod and re.fullmatch(r"0\d", cod) and "asistencial" in norm(denominacion):
+        cod = "O" + cod[1]
+    if not cod and re.match(r"^T\b", v):
+        cod = "T1"
+    return cod
 
 
 def _area(bloque: str) -> str | None:
@@ -119,8 +128,8 @@ def empleos_heuristico(txt: str) -> list[Empleo]:
         exper = _seccion(bloque, r"\bexperiencia\b")
         req = _seccion(bloque, r"requisitos")
         empleos.append(Empleo(
-            denominacion=denom.split("  ")[0][:120],
-            codigo=_codigo(_campo(bloque, r"c[oó]digo\b")),
+            denominacion=denom.split("  ")[0][:120].strip(" .,"),
+            codigo=_codigo(_campo(bloque, r"c[oó]digo\b"), denom),
             grado=(re.search(r"\d{1,2}", _campo(bloque, r"\bgrado")) or [None])[0],
             nivel=nivel[:40] or None,
             numero_cargos=int(num.group()) if num else None,

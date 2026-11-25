@@ -126,16 +126,34 @@ def perfil_desde_objeto(objeto: str) -> dict:
     return {"nivel_inferido": nivel, "formacion_mencionada": ", ".join(profesiones)}
 
 
+_STOP = {"de", "del", "la", "las", "los", "y", "e", "el", "para"}
+
+
+def _iniciales(dependencia: str) -> str:
+    return "".join(w[0] for w in re.findall(r"[A-Za-zÁÉÍÓÚÑáéíóúñ]+", dependencia)
+                   if w.lower() not in _STOP).upper()
+
+
 def siglas_de(oficiales: list[dict]) -> dict[str, str]:
-    """Siglas usadas por la entidad (p. ej. 'VPRE - GIT Riesgos' -> Vicepresidencia de Planeación...),
-    tomando la dependencia más frecuente para cada sigla en el informe oficial."""
+    """Siglas usadas por la entidad (p. ej. 'VPRE - GIT Riesgos' -> Vicepresidencia de Planeación,
+    Riesgos y Entorno). La sigla debe ser compatible con las iniciales de la dependencia
+    (VEJ ~ VE de Vicepresidencia Ejecutiva); entre las compatibles gana la más frecuente."""
     from collections import Counter, defaultdict
     votos: dict[str, Counter] = defaultdict(Counter)
+    deps = {v["dependencia"] for v in oficiales if v.get("dependencia")}
     for v in oficiales:
-        sig = (v.get("grupo") or "").split(" - ")[0].strip()
-        if 2 <= len(sig) <= 6 and sig.isupper() and v.get("dependencia"):
+        sig = norm((v.get("grupo") or "").split(" - ")[0]).upper()
+        if 2 <= len(sig) <= 6 and sig.isalpha() and v.get("dependencia"):
             votos[sig][v["dependencia"]] += 1
-    return {s: c.most_common(1)[0][0] for s, c in votos.items()}
+    salida = {}
+    for sig, c in votos.items():
+        compatibles = [d for d in deps if len(_iniciales(d)) >= 2 and
+                       (sig.startswith(_iniciales(d)) or _iniciales(d).startswith(sig))]
+        if compatibles:
+            salida[sig] = max(compatibles, key=lambda d: (c[d], len(_iniciales(d))))
+        else:
+            salida[sig] = c.most_common(1)[0][0]
+    return salida
 
 
 def ubicar_dependencia(texto: str, dependencias: list[str], siglas: dict[str, str] | None = None
