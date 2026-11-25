@@ -11,6 +11,7 @@ class Empleo(BaseModel):
     nivel: str | None = Field(None, description="Directivo, Asesor, Profesional, Técnico o Asistencial")
     numero_cargos: int | None = Field(None, description="Número de cargos/plazas de este empleo, si el documento lo indica")
     dependencia: str | None = Field(None, description="Dependencia donde se ubica el empleo")
+    area_funcional: str | None = Field(None, description="Área funcional / grupo interno de la ficha, si existe")
     proposito: str | None = None
     funciones: str | None = Field(None, description="Funciones esenciales, resumidas")
     requisitos_estudio: str | None = Field(None, description="Formación académica / núcleos básicos del conocimiento")

@@ -5,10 +5,6 @@ from pathlib import Path
 SIGEP_BASE = os.getenv(
     "SIGEP_BASE", "https://www1.funcionpublica.gov.co/fdci/consultaCiudadana/index"
 )
-# Valores de tipoPersonaId. 25 viene del enlace del usuario. Si se dejan vacíos,
-# el agente los detecta leyendo el <select> del formulario (por etiqueta).
-SIGEP_TIPO_CONTRATISTA = os.getenv("SIGEP_TIPO_CONTRATISTA", "25")
-SIGEP_TIPO_SERVIDOR = os.getenv("SIGEP_TIPO_SERVIDOR", "")
 SIGEP_PAGE_SIZE = int(os.getenv("SIGEP_PAGE_SIZE", "100"))
 
 # SECOP II - Contratos electrónicos (datos abiertos, API Socrata)

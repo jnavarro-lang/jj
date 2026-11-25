@@ -15,8 +15,7 @@ CAMPOS = {
     "nit_entidad": "nit_entidad",
     "id_contrato": "id_contrato",
     "referencia": "referencia_del_contrato",
-    "objeto": "objeto_del_contrato",
-    "descripcion": "descripcion_del_proceso",
+    "objeto": "descripcion_del_proceso",  # el dataset no tiene objeto_del_contrato
     "tipo_contrato": "tipo_de_contrato",
     "modalidad": "modalidad_de_contratacion",
     "estado": "estado_contrato",
@@ -24,11 +23,14 @@ CAMPOS = {
     "fecha_fin": "fecha_de_fin_del_contrato",
     "valor": "valor_del_contrato",
     "contratista": "proveedor_adjudicado",
-    "documento_contratista": "documento_proveedor",
     "departamento": "departamento",
     "ciudad": "ciudad",
     "url": "urlproceso",
 }
+
+
+def solo_digitos(txt: str | None) -> str:
+    return "".join(c for c in (txt or "") if c.isdigit())
 
 
 def _q(valor: str) -> str:
@@ -37,13 +39,15 @@ def _q(valor: str) -> str:
 
 def contratos_por_vencer(desde: date, hasta: date, nit: str | None = None,
                          entidad: str | None = None, solo_prestacion_servicios: bool = True,
-                         lote: int = 50000) -> list[dict]:
+                         lote: int = 20000) -> list[dict]:
     where = [
         f"{CAMPOS['fecha_fin']} between '{desde.isoformat()}T00:00:00' "
         f"and '{hasta.isoformat()}T23:59:59'"
     ]
-    if nit:
-        where.append(f"{CAMPOS['nit_entidad']} = '{_q(nit)}'")
+    if nit:  # en SECOP nit_entidad es numérico y suele incluir el dígito de verificación
+        base = int(solo_digitos(nit)[:9])
+        c = CAMPOS["nit_entidad"]
+        where.append(f"({c} = {base} or {c} between {base * 10} and {base * 10 + 9})")
     if entidad:
         where.append(f"upper({CAMPOS['entidad']}) like upper('%{_q(entidad)}%')")
     if solo_prestacion_servicios:

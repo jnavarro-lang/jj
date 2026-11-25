@@ -1,85 +1,87 @@
-# Agente de vacantes – SIGEP + SECOP II + manuales de funciones
+# Agente de vacantes – Función Pública + SECOP II + manuales de funciones
 
-Recorre **todas las entidades** del directorio del SIGEP y produce, por entidad:
+Para cada entidad produce:
 
-1. **Vacantes de planta (probables):** empleos del manual de funciones / decreto de planta
-   (denominación, código, grado, nivel, número de cargos, dependencia, propósito,
-   funciones, requisitos de estudio y experiencia), comparados con los **servidores
-   públicos** que aparecen en el SIGEP. Plazas − ocupados = vacantes probables, con su perfil.
-2. **Contratos que se liberan:** contratos con fecha de finalización en la ventana
-   (por defecto 01/08/2026 – 30/11/2026), tomados del SIGEP (contratistas) y de
-   **SECOP II** (datos.gov.co). Para cada uno: dependencia del organigrama, nivel
-   inferido (profesional, técnico, asistencial), formación mencionada en el objeto y el
-   empleo del manual más parecido como perfil de referencia.
+1. **Vacantes de planta con perfil**
+   * **Vacantes oficiales:** cargos sin proveer según el *informe de planta de personal* que
+     publica la entidad (denominación, código, grado, naturaleza, vacancia definitiva o
+     temporal, dependencia y grupo). A cada uno se le une la ficha del **manual de
+     funciones** (propósito y requisitos de estudio y experiencia).
+   * **Movimientos posteriores:** declaraciones de **RETIRO** e **INGRESO** publicadas en la
+     consulta ciudadana de la Ley 2013 de 2019 desde la fecha de corte del informe.
+     *Saldo estimado = vacantes oficiales + retiros − ingresos* por denominación.
+2. **Contratos que terminan:** contratos de prestación de servicios de **SECOP II** con fecha de
+   fin en la ventana (por defecto 01/08/2026 – 30/11/2026), ubicados en la dependencia y con
+   el nivel y la formación que se deducen del objeto.
 
-El resultado es un Excel con las hojas *Resumen*, *Vacantes planta*, *Contratos que se
-liberan*, *Dependencias* y *Alertas*, más un JSON por entidad en `salida/entidades/`.
+El resultado es un Excel con las hojas *Resumen*, *1. Vacantes oficiales*, *1. Saldo por
+cargo*, *1. Retiros declarados*, *2. Contratos que terminan*, *Fichas del manual* y
+*Alertas*, más un JSON por entidad en `salida/entidades/`.
+
+## Fuentes (verificadas en noviembre de 2026)
+
+| Fuente | Qué aporta | Nota |
+|---|---|---|
+| `www1.funcionpublica.gov.co/fdci/consultaCiudadana/index` | Declaraciones Ley 2013: declarante, cargo, tipo (INGRESO / RETIRO / PERIÓDICO / OTRO), fecha | **No es un listado de contratos.** El filtro de fechas es la fecha de publicación de la declaración. `tipoPersonaId` 25 = natural, 26 = jurídica. El servidor envía un intermedio TLS equivocado; el agente trae el intermedio público de Let's Encrypt en `agente_vacantes/certs/` (no desactiva la verificación). |
+| `www.datos.gov.co` dataset `jbjy-vk9h` (SECOP II – Contratos electrónicos) | Contratos: objeto (`descripcion_del_proceso`), fechas, valor, contratista, enlace | `nit_entidad` es numérico e incluye el dígito de verificación. |
+| Sitio web de cada entidad (Transparencia → Talento humano) | Manual de funciones, informe de planta / vacantes, organigrama | No hay repositorio central: un documento por entidad. |
 
 ## Instalación
 
 ```bash
 pip install -r requirements.txt
+# Solo si el manual está escaneado (sin texto):
+apt-get install -y tesseract-ocr tesseract-ocr-spa poppler-utils
 ```
 
-Necesita acceso a `www1.funcionpublica.gov.co` y `www.datos.gov.co`, y a los sitios web
-de las entidades si los manuales se descargan por URL.
+La red debe permitir `www1.funcionpublica.gov.co`, `www.datos.gov.co` y el sitio de cada
+entidad (por ejemplo `www.ani.gov.co`).
 
 ## Uso
 
 ```bash
-# 1. Lista de entidades desde el formulario del SIGEP -> entidades.csv
+# 1. Lista de entidades (≈14.800) -> entidades.csv
 python -m agente_vacantes entidades
 
-# 2. Complete en entidades.csv (o deje los archivos en insumos/<codigo>/):
-#    nit          -> mejora el cruce con SECOP II
-#    manual       -> ruta o URL del Manual Específico de Funciones (PDF/DOCX/TXT)
-#    organigrama  -> ruta o URL del organigrama (PDF o imagen)
-#    planta       -> ruta o URL del decreto/resolución de planta (trae el número de cargos)
+# 2. Por entidad, complete en entidades.csv (ruta o URL; varias separadas por |)
+#    o deje los archivos en insumos/<codigo>/ con "manual", "planta" u "organigrama" en el nombre:
+#    nit, manual, planta (informe de vacantes), organigrama, corte_planta (aaaa-mm-dd, opcional)
 
-# 3. Ejecutar (todas las entidades, o solo algunas con --codigo)
-python -m agente_vacantes ejecutar --desde 2026-08-01 --hasta 2026-11-30
-python -m agente_vacantes ejecutar --codigo 5202
+# 3. Ejecutar
+python -m agente_vacantes ejecutar --codigo 5202          # una entidad
+python -m agente_vacantes ejecutar                        # todas las de entidades.csv
 ```
 
-Opciones: `--sin-ia`, `--sin-sigep`, `--sin-secop`, `--todos-los-tipos` (todos los tipos
-de contrato en SECOP, no solo prestación de servicios), `--rehacer`. El recorrido se
-puede interrumpir y reanudar: las entidades que ya tienen JSON en `salida/entidades/` se
-saltan.
+Opciones: `--desde/--hasta` (ventana de fin de contratos), `--movimientos-desde` (por defecto,
+el corte del informe de planta), `--sin-ia`, `--sin-sigep`, `--sin-secop`,
+`--todos-los-tipos`, `--rehacer`. Con más de 20 entidades, SECOP II y las declaraciones se
+descargan una sola vez para todas. El recorrido se reanuda donde quedó.
 
-### Lectura de manuales y organigramas
+### Manuales escaneados (OCR)
 
-* **Con Claude** (recomendado): si hay `ANTHROPIC_API_KEY` (o un perfil de
-  `ant auth login`), los PDF e imágenes se leen con el modelo `claude-opus-5-5`
-  (variable `CLAUDE_MODEL`) y salida estructurada. Los PDF largos se procesan en tramos
-  de 30 páginas. Está activado el reenvío automático a otro modelo si una solicitud es
-  rechazada (`CLAUDE_FALLBACKS=0` para desactivarlo).
-* **Sin IA** (`--sin-ia`): un parser de texto para el formato típico del manual
-  (“Denominación del empleo / Código / Grado / No. de cargos…”). Es más frágil con PDF
-  escaneados o tablas complejas.
+Si junto al PDF existe un archivo `<nombre>.ocr.txt`, el agente usa ese texto. Para generarlo:
 
-### Variables de entorno
+```bash
+pdftoppm -r 200 -gray -png manual.pdf pg
+ls pg-*.png | sort -V | OMP_THREAD_LIMIT=1 xargs -P 4 -I{} tesseract {} {} -l spa --psm 4
+ls pg-*.png | sort -V | while read f; do cat "$f.txt"; done > manual.ocr.txt
+```
 
-| Variable | Uso |
-|---|---|
-| `SIGEP_TIPO_CONTRATISTA` | `tipoPersonaId` de contratistas (por defecto 25) |
-| `SIGEP_TIPO_SERVIDOR` | `tipoPersonaId` de servidores; si se deja vacío se detecta del formulario |
-| `SECOP_APP_TOKEN` | token de datos.gov.co (opcional, evita límites de peticiones) |
-| `PAUSA_SEG` | pausa entre peticiones (por defecto 1 s) |
+(`OMP_THREAD_LIMIT=1` es importante: sin él los procesos compiten y el OCR va ~100 veces
+más lento.) Con credenciales de Anthropic, el agente puede leer el PDF con Claude
+(`claude-opus-5-5`) sin OCR.
 
-## Limitaciones (léalas antes de usar los resultados)
+## Limitaciones
 
-* **“Vacante probable” no es una vacante oficial.** El directorio del SIGEP puede estar
-  incompleto o desactualizado. Si una entidad no tiene servidores en el SIGEP, la columna
-  *ocupacion_verificada* = NO y no se reportan vacantes. Confirme con la entidad, la
-  OPEC de la CNSC (SIMO) o el decreto de planta vigente.
-* El **número de cargos** casi nunca está en el manual: viene en el decreto de planta. Si
-  falta, se asume 1 y se marca en *observacion*.
-* No existe un repositorio central de manuales y organigramas: hay que conseguir el
-  documento de cada entidad (sección de Transparencia, Ley 1712 de 2014).
-* Los contratos de prestación de servicios **no** son empleos de planta. La opción 2
-  muestra necesidades que se liberan, no cargos vacantes.
-* El parser del SIGEP es genérico (detecta columnas por encabezado y sigue la paginación).
-  Si una consulta no devuelve filas, el HTML queda en `.cache/sigep_debug/` para ajustarlo.
+* **El saldo estimado es una señal, no un conteo oficial.** No todos los servidores publican
+  sus declaraciones a tiempo, y la declaración no dice el grado ni la dependencia. Confirme
+  con la entidad o con la OPEC de la CNSC (SIMO).
+* El informe de planta puede estar desactualizado (la ANI publicó el de junio de 2025); el
+  agente lo marca en *Alertas*.
+* Los contratos de prestación de servicios no son cargos de planta.
+* La ubicación del contrato en una dependencia se deduce del texto del objeto (siglas o
+  nombre); revise la columna `confianza_dependencia`.
+* No se guarda el número de documento de los declarantes.
 
 ## Pruebas
 
@@ -87,4 +89,4 @@ saltan.
 python -m pytest -q
 ```
 
-Las pruebas usan datos **sintéticos**.
+Las pruebas usan datos sintéticos con la estructura real de las fuentes.
